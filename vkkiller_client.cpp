@@ -5,16 +5,13 @@
 VkKillerClient::VkKillerClient(qintptr socketDescriptor, QObject* parent):
     QTcpSocket			(parent),
     m_name 			  	("anonymous"),
-    m_topicInOwnership	(nullptr),
     m_selectedTopic		(nullptr)
 {
     setSocketDescriptor(socketDescriptor);
 }
 
 
-VkKillerClient::~VkKillerClient()
-{
-    m_topicInOwnership 	= nullptr;
+VkKillerClient::~VkKillerClient() {
     m_selectedTopic		= nullptr;
 }
 

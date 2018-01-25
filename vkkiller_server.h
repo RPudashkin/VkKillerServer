@@ -32,8 +32,11 @@ protected:
     void incomingConnection(qintptr socketDescriptor);
 
 private slots:
-    void readDataFromClient();
+    void processClientRequest();
     void disconnectClient();
+
+private:
+    void replyToClient(VkKillerClient* client, quint8 reply_type, const QString& msg = "");
 
 private:
     using uPtrToClient = std::unique_ptr<VkKillerClient>;
@@ -42,6 +45,10 @@ private:
     std::map<qintptr, uPtrToClient> 	m_clients;
     std::vector<uPtrToTopic> 			m_topics;
     std::mutex							m_globalSynchMutex;
+    std::mutex							m_topicCreatingMutex;
+
+    static constexpr quint16 MAX_TOPICS_AMOUNT  = 150;
+    static constexpr quint16 MAX_MESSAGE_LENGTH = 300;
 };
 
 #endif // VKKILLER_SERVER_H

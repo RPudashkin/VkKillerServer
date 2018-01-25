@@ -3,7 +3,6 @@
 
 #include <QTcpSocket>
 
-
 class VkKillerServer;
 class VkKillerTopic;
 
@@ -22,9 +21,11 @@ public:
 
     QString name() const noexcept;
 
+    // 32 characters per name this is maximum
+    static constexpr quint8 MAX_NAME_LENGTH = 32;
+
 private:
     QString 		m_name;
-    VkKillerTopic* 	m_topicInOwnership;
     VkKillerTopic*  m_selectedTopic;
 };
 

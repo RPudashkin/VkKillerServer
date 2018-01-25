@@ -7,10 +7,13 @@ int main(int argc, char *argv[]) {
 
     const int port = 1234;
     VkKillerServer* server = new VkKillerServer();
-    bool succes = server->start(QHostAddress::Any, port, nullptr);
+    QString errMsg;
+    bool succes = server->start(QHostAddress::Any, port, &errMsg);
 
-    if (!succes)
-        qFatal("Could not start server");
+    if (!succes) {
+        qFatal("Could not start server: ");
+        qFatal(errMsg.toStdString().c_str());
+    }
     else
         qDebug() << "Server is ready!";
 
