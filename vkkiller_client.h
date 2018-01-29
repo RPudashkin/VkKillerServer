@@ -12,10 +12,10 @@ class VkKillerClient: private QTcpSocket {
 public:
     VkKillerClient(qintptr socketDescriptor, QObject* parent = nullptr);
 
-    VkKillerClient(const VkKillerClient&) 			 = delete;
-    VkKillerClient(VkKillerClient&&) 	  			 = delete;
+    VkKillerClient(const VkKillerClient&)            = delete;
+    VkKillerClient(VkKillerClient&&)                 = delete;
     VkKillerClient& operator=(const VkKillerClient&) = delete;
-    VkKillerClient& operator=(VkKillerClient&&) 	 = delete;
+    VkKillerClient& operator=(VkKillerClient&&)      = delete;
 
     QString name() const noexcept;
     qintptr id()   const noexcept;
@@ -23,10 +23,10 @@ public:
     static bool isValidName(const QString& name) noexcept;
 
 private:
-    QString 	m_name;
-    qintptr		m_id;
-    quint16  	m_selectedTopicNum;
-    size_t 		m_lastReadMsgNum;
+    QString     m_name;
+    qintptr     m_id;
+    quint16     m_selectedTopicNum;
+    size_t      m_lastReadMsgNum;
 };
 
 #endif // VKKILLER_CLIENT_H

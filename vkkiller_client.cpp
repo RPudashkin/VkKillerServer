@@ -2,11 +2,11 @@
 
 
 VkKillerClient::VkKillerClient(qintptr socketDescriptor, QObject* parent):
-    QTcpSocket			(parent),
-    m_name 			  	("anonymous"),
-    m_id 				(socketDescriptor),
-    m_selectedTopicNum	(0),
-    m_lastReadMsgNum	(0)
+    QTcpSocket          (parent),
+    m_name              ("anonymous"),
+    m_id                (socketDescriptor),
+    m_selectedTopicNum  (0),
+    m_lastReadMsgNum    (0)
 {
     setSocketDescriptor(socketDescriptor);
 }

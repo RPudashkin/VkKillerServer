@@ -12,8 +12,8 @@
 
 
 VkKillerServer::VkKillerServer(QObject* parent):
-    QTcpServer			(parent),
-    m_openTopicsAmount 	(0)
+    QTcpServer          (parent),
+    m_openTopicsAmount  (0)
 {
     for (size_t i = 0; i < m_topics.size(); ++i)
         m_topics[i] = std::make_unique<VkKillerTopic>();
@@ -54,8 +54,8 @@ void VkKillerServer::incomingConnection(qintptr socketDescriptor) {
 
 void VkKillerServer::processClientRequest() {
     VkKillerClient* client = static_cast<VkKillerClient*>(sender());
-    QDataStream 	in(client);
-    quint16			blockSize = 0;
+    QDataStream     in(client);
+    quint16         blockSize = 0;
 
     in.setVersion(QDataStream::Qt_DefaultCompiledVersion);
 
@@ -73,8 +73,8 @@ void VkKillerServer::processClientRequest() {
         in >> request;
 
         quint16 topicNum = 0;
-        if (request == Request_type::GET_TOPIC_HISTORY 				||
-            request == Request_type::GET_LAST_MESSAGES_FROM_TOPIC 	||
+        if (request == Request_type::GET_TOPIC_HISTORY              ||
+            request == Request_type::GET_LAST_MESSAGES_FROM_TOPIC   ||
             request == Request_type::TEXT_MESSAGE)
         {
             in >> topicNum;
@@ -90,7 +90,7 @@ void VkKillerServer::processClientRequest() {
                      << "\nParams: topicNum =" << topicNum;
 
             client->m_selectedTopicNum  = topicNum;
-            client->m_lastReadMsgNum 	= m_topics[topicNum]->size() - 1;
+            client->m_lastReadMsgNum    = m_topics[topicNum]->size() - 1;
 
             QString history = m_topics[topicNum]->getPackedHistory();
             replyToClient(client, Reply_type::OK, history);
@@ -102,8 +102,8 @@ void VkKillerServer::processClientRequest() {
             QString history;
 
             if (client->m_selectedTopicNum != topicNum) {
-                client->m_selectedTopicNum 	= topicNum;
-                client->m_lastReadMsgNum 	= m_topics[topicNum]->size() - 1;
+                client->m_selectedTopicNum  = topicNum;
+                client->m_lastReadMsgNum    = m_topics[topicNum]->size() - 1;
                 history = m_topics[topicNum]->getPackedHistory();
             }
             else {
@@ -121,8 +121,8 @@ void VkKillerServer::processClientRequest() {
             for (size_t i = 0; i < m_topics.size(); ++i) {
                 if (m_topics[i]->closed()) continue;
 
-                outstr += QString::number(i) 					+ SEPARATING_CH
-                       + m_topics[i]->name() 					+ SEPARATING_CH
+                outstr += QString::number(i)                    + SEPARATING_CH
+                       + m_topics[i]->name()                    + SEPARATING_CH
                        + QString::number(m_topics[i]->rating()) + SEPARATING_CH;
             }
 
@@ -208,7 +208,7 @@ void VkKillerServer::processClientRequest() {
 
 
 inline void VkKillerServer::replyToClient(VkKillerClient* client, quint8 reply_type, const QString& msg) noexcept {
-    QByteArray 	buffer;
+    QByteArray  buffer;
     QDataStream out(&buffer, QIODevice::WriteOnly);
     out.setVersion(QDataStream::Qt_DefaultCompiledVersion);
 

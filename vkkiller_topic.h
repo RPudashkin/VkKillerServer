@@ -65,12 +65,12 @@ private:
 
         QString authorName;
         size_t  authorId;
-        QTime	time;
-        QDate	date;
-        QString	message;
+        QTime   time;
+        QDate   date;
+        QString message;
 
-        Entry(const Entry&) 			= delete;
-        Entry& operator=(const Entry&) 	= delete;
+        Entry(const Entry&)             = delete;
+        Entry& operator=(const Entry&)  = delete;
     };
 
     // Thread-safe operation
@@ -81,16 +81,16 @@ private slots:
 
 private:
     static constexpr int  UPDATE_RATING_FREQUENCY = 300000; // every 5 minutes
-    static constexpr char SEPARATING_CH			  = '\1';
+    static constexpr char SEPARATING_CH           = '\1';
 
-    QString 			m_name;
-    QTime				m_openTime;
-    QDate				m_openDate;
-    qint16				m_rating;
-    bool				m_closed;
-    std::mutex			m_mutex;
-    std::vector<Entry> 	m_history; // full topic history
-    QTimer				m_updateRatingTimer;
+    QString             m_name;
+    QTime               m_openTime;
+    QDate               m_openDate;
+    qint16              m_rating;
+    bool                m_closed;
+    std::mutex          m_mutex;
+    std::vector<Entry>  m_history; // full topic history
+    QTimer              m_updateRatingTimer;
 };
 
 #endif // VKKILLER_TOPIC_H

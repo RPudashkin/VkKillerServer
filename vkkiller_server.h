@@ -20,10 +20,10 @@ public:
     explicit VkKillerServer(QObject* parent = nullptr);
    ~VkKillerServer();
 
-    VkKillerServer(const VkKillerServer&) 				= delete;
-    VkKillerServer(VkKillerServer&) 	  				= delete;
-    VkKillerServer& operator=(const VkKillerServer&) 	= delete;
-    VkKillerServer& operator=(VkKillerServer&&) 		= delete;
+    VkKillerServer(const VkKillerServer&)               = delete;
+    VkKillerServer(VkKillerServer&)                     = delete;
+    VkKillerServer& operator=(const VkKillerServer&)    = delete;
+    VkKillerServer& operator=(VkKillerServer&&)         = delete;
 
     bool start(const QHostAddress& address, quint16 port, QString* errMsg = nullptr);
 
@@ -43,11 +43,11 @@ private:
     static constexpr quint8  MAX_CLIENT_NAME_LENGTH = 32;
     static constexpr quint8  MAX_TOPIC_NAME_LENGTH  = 150;
 
-    std::map<qintptr, uPtrToClient> 			m_clients;
-    std::array<uPtrToTopic, MAX_TOPICS_AMOUNT> 	m_topics;
-    std::mutex									m_globalSynchMutex;
-    std::mutex									m_openTopicMutex;
-    quint16										m_openTopicsAmount;
+    std::map<qintptr, uPtrToClient>             m_clients;
+    std::array<uPtrToTopic, MAX_TOPICS_AMOUNT>  m_topics;
+    std::mutex                                  m_globalSynchMutex;
+    std::mutex                                  m_openTopicMutex;
+    quint16                                     m_openTopicsAmount;
 
     void replyToClient(VkKillerClient* client, quint8 reply_type, const QString& msg = "") noexcept;
 };
