@@ -19,8 +19,8 @@ public:
     VkKillerTopic(VkKillerTopic&&);
     VkKillerTopic& operator=(VkKillerTopic&&);
 
-    VkKillerTopic(const VkKillerTopic&) 			= delete;
-    VkKillerTopic& operator=(const VkKillerTopic&) 	= delete;
+    VkKillerTopic(const VkKillerTopic&)             = delete;
+    VkKillerTopic& operator=(const VkKillerTopic&)  = delete;
 
     // Open a topic for discussion
     // By default all topics are closed
@@ -29,7 +29,7 @@ public:
 
     bool    closed() const noexcept;
     QString name  () const noexcept;
-    qint16	rating() const noexcept;
+    qint16  rating() const noexcept;
     size_t  size  () const noexcept;
 
     // Check that message is valid
