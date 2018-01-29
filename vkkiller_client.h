@@ -4,7 +4,6 @@
 #include <QTcpSocket>
 
 class VkKillerServer;
-class VkKillerTopic;
 
 
 class VkKillerClient: private QTcpSocket {
@@ -12,7 +11,6 @@ class VkKillerClient: private QTcpSocket {
 
 public:
     VkKillerClient(qintptr socketDescriptor, QObject* parent = nullptr);
-   ~VkKillerClient();
 
     VkKillerClient(const VkKillerClient&) 			 = delete;
     VkKillerClient(VkKillerClient&&) 	  			 = delete;
@@ -20,13 +18,15 @@ public:
     VkKillerClient& operator=(VkKillerClient&&) 	 = delete;
 
     QString name() const noexcept;
+    qintptr id()   const noexcept;
 
-    // 32 characters per name this is maximum
-    static constexpr quint8 MAX_NAME_LENGTH = 32;
+    static bool isValidName(const QString& name) noexcept;
 
 private:
-    QString 		m_name;
-    VkKillerTopic*  m_selectedTopic;
+    QString 	m_name;
+    qintptr		m_id;
+    quint16  	m_selectedTopicNum;
+    size_t 		m_lastReadMsgNum;
 };
 
 #endif // VKKILLER_CLIENT_H

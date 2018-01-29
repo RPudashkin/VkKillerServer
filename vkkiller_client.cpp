@@ -1,21 +1,31 @@
 ﻿#include "vkkiller_client.h"
-#include "vkkiller_topic.h"
 
 
 VkKillerClient::VkKillerClient(qintptr socketDescriptor, QObject* parent):
     QTcpSocket			(parent),
     m_name 			  	("anonymous"),
-    m_selectedTopic		(nullptr)
+    m_id 				(socketDescriptor),
+    m_selectedTopicNum	(0),
+    m_lastReadMsgNum	(0)
 {
     setSocketDescriptor(socketDescriptor);
 }
 
 
-VkKillerClient::~VkKillerClient() {
-    m_selectedTopic		= nullptr;
+QString VkKillerClient::name() const noexcept {
+    return m_name;
 }
 
 
-QString VkKillerClient::name() const noexcept {
-    return m_name;
+qintptr VkKillerClient::id() const noexcept {
+    return m_id;
+}
+
+
+bool VkKillerClient::isValidName(const QString& name) noexcept {
+    for (QChar ch: name) {
+        //...
+    }
+
+    return true;
 }

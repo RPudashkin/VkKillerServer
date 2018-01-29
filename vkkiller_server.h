@@ -2,14 +2,13 @@
 #define VKKILLER_SERVER_H
 
 #include <QTcpServer>
-#include <QHostAddress>
-#include <QString>
-#include <vector>
+#include <array>
 #include <memory>
 #include <mutex>
 #include <map>
 
-
+class QString;
+class QHostAddress;
 class VkKillerClient;
 class VkKillerTopic;
 
@@ -18,7 +17,7 @@ class VkKillerServer: private QTcpServer {
     Q_OBJECT
 
 public:
-    VkKillerServer(QObject* parent = nullptr);
+    explicit VkKillerServer(QObject* parent = nullptr);
    ~VkKillerServer();
 
     VkKillerServer(const VkKillerServer&) 				= delete;
@@ -36,19 +35,21 @@ private slots:
     void disconnectClient();
 
 private:
-    void replyToClient(VkKillerClient* client, quint8 reply_type, const QString& msg = "");
-
-private:
     using uPtrToClient = std::unique_ptr<VkKillerClient>;
     using uPtrToTopic  = std::unique_ptr<VkKillerTopic>;
 
-    std::map<qintptr, uPtrToClient> 	m_clients;
-    std::vector<uPtrToTopic> 			m_topics;
-    std::mutex							m_globalSynchMutex;
-    std::mutex							m_topicCreatingMutex;
+    static constexpr quint16 MAX_TOPICS_AMOUNT      = 150;
+    static constexpr quint16 MAX_MESSAGE_LENGTH     = 300;
+    static constexpr quint8  MAX_CLIENT_NAME_LENGTH = 32;
+    static constexpr quint8  MAX_TOPIC_NAME_LENGTH  = 150;
 
-    static constexpr quint16 MAX_TOPICS_AMOUNT  = 150;
-    static constexpr quint16 MAX_MESSAGE_LENGTH = 300;
+    std::map<qintptr, uPtrToClient> 			m_clients;
+    std::array<uPtrToTopic, MAX_TOPICS_AMOUNT> 	m_topics;
+    std::mutex									m_globalSynchMutex;
+    std::mutex									m_openTopicMutex;
+    quint16										m_openTopicsAmount;
+
+    void replyToClient(VkKillerClient* client, quint8 reply_type, const QString& msg = "") noexcept;
 };
 
 #endif // VKKILLER_SERVER_H

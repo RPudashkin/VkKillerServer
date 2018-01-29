@@ -1,6 +1,7 @@
-﻿#include <QByteArray>
+﻿#include <QString>
+#include <QHostAddress>
+#include <QByteArray>
 #include <QDataStream>
-#include <QTextCodec>
 #include <QTime>
 #include <QDate>
 
@@ -11,16 +12,18 @@
 
 
 VkKillerServer::VkKillerServer(QObject* parent):
-    QTcpServer(parent)
-{}
+    QTcpServer			(parent),
+    m_openTopicsAmount 	(0)
+{
+    for (size_t i = 0; i < m_topics.size(); ++i)
+        m_topics[i] = std::make_unique<VkKillerTopic>();
+}
 
 
 VkKillerServer::~VkKillerServer() {
     for (auto& client: m_clients)
         client.second->close();
-
     m_clients.clear();
-    m_topics.clear();
 
     close();
 }
@@ -30,7 +33,6 @@ bool VkKillerServer::start(const QHostAddress& address, quint16 port, QString* e
     if (!listen(address, port)) {
         if (errMsg != nullptr)
             *errMsg = errorString();
-
         close();
         return false;
     }
@@ -38,16 +40,15 @@ bool VkKillerServer::start(const QHostAddress& address, quint16 port, QString* e
     return true;
 }
 
-
 void VkKillerServer::incomingConnection(qintptr socketDescriptor) {
     std::lock_guard<std::mutex> locker(m_globalSynchMutex);
     m_clients[socketDescriptor] = std::make_unique<VkKillerClient>(socketDescriptor);
+    const VkKillerClient* client = m_clients[socketDescriptor].get();
 
-    connect(m_clients[socketDescriptor].get(), SIGNAL(&VkKillerServer::disconnected()),
-            this, SLOT(disconnectClient()));
+    connect(client, SIGNAL(disconnected()), this, SLOT(disconnectClient()));
+    connect(client, SIGNAL(readyRead()),    this, SLOT(processClientRequest()));
 
-    connect(m_clients[socketDescriptor].get(), SIGNAL(&VkKillerServer::readyRead()),
-            this, SLOT(processClientRequest()));
+    qDebug() << "\nNew connection from" << client->peerAddress().toString();
 }
 
 
@@ -71,84 +72,142 @@ void VkKillerServer::processClientRequest() {
         quint8 request;
         in >> request;
 
-        if (request == Request_type::SET_NAME) {
-            QString name;
-            in >> name;
+        quint16 topicNum = 0;
+        if (request == Request_type::GET_TOPIC_HISTORY 				||
+            request == Request_type::GET_LAST_MESSAGES_FROM_TOPIC 	||
+            request == Request_type::TEXT_MESSAGE)
+        {
+            in >> topicNum;
 
-            if (name.length() > VkKillerClient::MAX_NAME_LENGTH) {
-                replyToClient(client, Reply_type::WRONG_NAME);
-                return;
+            if (topicNum >= m_topics.size() || m_topics[topicNum]->closed()) {
+                replyToClient(client, Reply_type::UNKNOWN_TOPIC);
+                continue;
             }
-
-            client->m_name = std::move(name);
         }
+
+        if (request == Request_type::GET_TOPIC_HISTORY) {
+            qDebug() << "\nGET_TOPIC_HISTORY request from" << client->peerAddress().toString()
+                     << "\nParams: topicNum =" << topicNum;
+
+            client->m_selectedTopicNum  = topicNum;
+            client->m_lastReadMsgNum 	= m_topics[topicNum]->size() - 1;
+
+            QString history = m_topics[topicNum]->getPackedHistory();
+            replyToClient(client, Reply_type::OK, history);
+        } // GET_TOPIC_HISTORY
+        else if (request == Request_type::GET_LAST_MESSAGES_FROM_TOPIC) {
+            qDebug() << "\nGET_LAST_MESSAGES_FROM_TOPIC request from" << client->peerAddress().toString()
+                     << "\nParams: topicNum =" << topicNum;
+
+            QString history;
+
+            if (client->m_selectedTopicNum != topicNum) {
+                client->m_selectedTopicNum 	= topicNum;
+                client->m_lastReadMsgNum 	= m_topics[topicNum]->size() - 1;
+                history = m_topics[topicNum]->getPackedHistory();
+            }
+            else {
+                size_t msgNum = client->m_lastReadMsgNum;
+                history = m_topics[topicNum]->getPackedHistory(msgNum);
+            }
+            replyToClient(client, Reply_type::OK, history);
+        } // GET_LAST_MESSAGES_FROM_TOPIC
         else if (request == Request_type::GET_TOPICS_LIST) {
+            qDebug() << "\nGET_TOPICS_LIST request from" << client->peerAddress().toString();
 
-        }
-        else if (request == Request_type::GET_TOPIC_RATING) {
-            quint16 topicNum;
-            in >> topicNum;
+            const QChar SEPARATING_CH = '\1';
+            QString outstr = "";
 
-            if (topicNum < 0 || topicNum >= m_topics.size()) {
-                replyToClient(client, Reply_type::UNKNOWN_TOPIC);
-                return;
-            }
-            // send rating
-        }
-        else if (request == Request_type::CREATE_TOPIC) {
-            if (m_topics.size() >= MAX_TOPICS_AMOUNT) {
-                replyToClient(client, Reply_type::FAILED_TOPIC_CREATE);
-                return;
+            for (size_t i = 0; i < m_topics.size(); ++i) {
+                if (m_topics[i]->closed()) continue;
+
+                outstr += QString::number(i) 					+ SEPARATING_CH
+                       + m_topics[i]->name() 					+ SEPARATING_CH
+                       + QString::number(m_topics[i]->rating()) + SEPARATING_CH;
             }
 
-            QString topicName;
-            in >> topicName;
-
-            if (topicName.length() > VkKillerTopic::MAX_NAME_LENGTH) {
-                replyToClient(client, Reply_type::WRONG_TOPIC_NAME);
-                return;
-            }
-
-            std::lock_guard<std::mutex> locker(m_topicCreatingMutex);
-            m_topics.push_back(std::make_unique<VkKillerTopic>(topicName));
-        }
+            replyToClient(client, Reply_type::OK, outstr);
+        } // GET_TOPICS_LIST
         else if (request == Request_type::TEXT_MESSAGE) {
-            quint16 topicNum;
-            in >> topicNum;
-
-            if (topicNum < 0 || topicNum >= m_topics.size()) {
-                replyToClient(client, Reply_type::UNKNOWN_TOPIC);
-                return;
-            }
-
             QString message;
             in >> message;
 
-            if (message.length() > MAX_MESSAGE_LENGTH) {
+            qDebug() << "\nTEXT_MESSAGE request from" << client->peerAddress().toString()
+                     << "\nParams: message =" << message << ", topicNum =" << topicNum;
+
+            if (message.length() > MAX_MESSAGE_LENGTH ||
+               !VkKillerTopic::isValidMessage(message))
+            {
                 replyToClient(client, Reply_type::WRONG_MESSAGE);
-                return;
+                continue;
             }
 
             QTime time = QTime::currentTime();
             QDate date = QDate::currentDate();
 
-            m_topics[topicNum]->addMessage(client->name(), time, date, message);
+            m_topics[topicNum]->addMessage(client->name(), client->id(), time, date, message);
             replyToClient(client, Reply_type::OK);
-        }
-        else if (request == Request_type::GET_TOPIC_HISTORY) {
+        } // TEXT_MESSAGE
+        else if (request == Request_type::CREATE_TOPIC) {
+            if (m_topics.size() >= MAX_TOPICS_AMOUNT) {
+                replyToClient(client, Reply_type::FAILED_TOPIC_CREATE);
+                continue;
+            }
 
-        }
-        else if (request == Request_type::GET_LASTEST_MESSAGES_FROM_TOPIC) {
+            QString topicName, message;
+            in >> topicName >> message;
 
-        }
-        else {
-            replyToClient(client, Reply_type::UNKNOWN_REQUEST);
-            return;
-        }
+            if (topicName.length() > MAX_TOPIC_NAME_LENGTH) {
+                replyToClient(client, Reply_type::WRONG_TOPIC_NAME);
+                continue;
+            }
+
+            if (message.length() > MAX_MESSAGE_LENGTH ||
+               !VkKillerTopic::isValidMessage(message))
+            {
+                replyToClient(client, Reply_type::WRONG_MESSAGE);
+                continue;
+            }
+
+            qDebug() << "\nCREATE_TOPIC request from" << client->peerAddress().toString()
+                     << "\nParams: topicName =" << topicName << ", message =" << message;
+
+            QTime time = QTime::currentTime();
+            QDate date = QDate::currentDate();
+
+            std::lock_guard<std::mutex> locker(m_openTopicMutex);
+            for (size_t i = 0; i < m_topics.size(); ++i)
+                if (m_topics[i]->closed()) {
+                    if (!m_topics[i]->open(topicName))
+                        continue;
+
+                    m_topics[i]->addMessage(client->name(), client->id(), time, date, message);
+                    m_openTopicsAmount++;
+                    break;
+                }
+        } // CREATE_TOPIC
+        else if (request == Request_type::SET_NAME) {
+            QString name;
+            in >> name;
+
+            qDebug() << "\nSET_NAME request from" << client->peerAddress().toString()
+                     << "\nParams: name =" << name;
+
+            if (name.length() > MAX_CLIENT_NAME_LENGTH ||
+               !VkKillerClient::isValidName(name))
+            {
+                replyToClient(client, Reply_type::WRONG_NAME);
+                continue;
+            }
+
+            client->m_name = std::move(name);
+        } // SET_NAME
+        else replyToClient(client, Reply_type::UNKNOWN_REQUEST);
     }
 }
 
-void VkKillerServer::replyToClient(VkKillerClient* client, quint8 reply_type, const QString& msg) {
+
+inline void VkKillerServer::replyToClient(VkKillerClient* client, quint8 reply_type, const QString& msg) noexcept {
     QByteArray 	buffer;
     QDataStream out(&buffer, QIODevice::WriteOnly);
     out.setVersion(QDataStream::Qt_DefaultCompiledVersion);
@@ -162,6 +221,7 @@ void VkKillerServer::replyToClient(VkKillerClient* client, quint8 reply_type, co
 
 void VkKillerServer::disconnectClient() {
     VkKillerClient* client = static_cast<VkKillerClient*>(sender());
-    m_clients.erase(client->socketDescriptor());
+    qDebug() << "\nClient" << client->peerAddress().toString() << "has disconnected";
     client->close();
+    m_clients.erase(client->id());
 }
