@@ -24,7 +24,8 @@ qintptr VkKillerClient::id() const noexcept {
 
 bool VkKillerClient::isValidName(const QString& name) noexcept {
     for (QChar ch: name) {
-        //...
+        if (!(ch.isLetterOrNumber() || ch == '#' || ch == '_'))
+            return false;
     }
 
     return true;

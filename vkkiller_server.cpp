@@ -4,20 +4,17 @@
 #include <QDataStream>
 #include <QTime>
 #include <QDate>
+#include <QMutexLocker>
 
 #include "vkkiller_server.h"
 #include "vkkiller_client.h"
-#include "vkkiller_topic.h"
 #include "vkkiller_request_reply.h"
 
 
 VkKillerServer::VkKillerServer(QObject* parent):
     QTcpServer          (parent),
     m_openTopicsAmount  (0)
-{
-    for (size_t i = 0; i < m_topics.size(); ++i)
-        m_topics[i] = std::make_unique<VkKillerTopic>();
-}
+{}
 
 
 VkKillerServer::~VkKillerServer() {
@@ -41,7 +38,7 @@ bool VkKillerServer::start(const QHostAddress& address, quint16 port, QString* e
 }
 
 void VkKillerServer::incomingConnection(qintptr socketDescriptor) {
-    std::lock_guard<std::mutex> locker(m_globalSynchMutex);
+    QMutexLocker locker(&m_globalSynchMutex);
     m_clients[socketDescriptor] = std::make_unique<VkKillerClient>(socketDescriptor);
     const VkKillerClient* client = m_clients[socketDescriptor].get();
 
@@ -79,7 +76,7 @@ void VkKillerServer::processClientRequest() {
         {
             in >> topicNum;
 
-            if (topicNum >= m_topics.size() || m_topics[topicNum]->closed()) {
+            if (topicNum >= m_topics.size() || m_topics[topicNum].closed()) {
                 replyToClient(client, Reply_type::UNKNOWN_TOPIC);
                 continue;
             }
@@ -90,9 +87,9 @@ void VkKillerServer::processClientRequest() {
                      << "\nParams: topicNum =" << topicNum;
 
             client->m_selectedTopicNum  = topicNum;
-            client->m_lastReadMsgNum    = m_topics[topicNum]->size() - 1;
+            client->m_lastReadMsgNum    = m_topics[topicNum].size() - 1;
 
-            QString history = m_topics[topicNum]->getPackedHistory();
+            QString history = m_topics[topicNum].getPackedHistory();
             replyToClient(client, Reply_type::OK, history);
         } // GET_TOPIC_HISTORY
         else if (request == Request_type::GET_LAST_MESSAGES_FROM_TOPIC) {
@@ -103,28 +100,33 @@ void VkKillerServer::processClientRequest() {
 
             if (client->m_selectedTopicNum != topicNum) {
                 client->m_selectedTopicNum  = topicNum;
-                client->m_lastReadMsgNum    = m_topics[topicNum]->size() - 1;
-                history = m_topics[topicNum]->getPackedHistory();
+                client->m_lastReadMsgNum    = m_topics[topicNum].size() - 1;
+                history = m_topics[topicNum].getPackedHistory();
             }
             else {
                 size_t msgNum = client->m_lastReadMsgNum;
-                history = m_topics[topicNum]->getPackedHistory(msgNum);
+                history = m_topics[topicNum].getPackedHistory(msgNum);
             }
             replyToClient(client, Reply_type::OK, history);
         } // GET_LAST_MESSAGES_FROM_TOPIC
         else if (request == Request_type::GET_TOPICS_LIST) {
             qDebug() << "\nGET_TOPICS_LIST request from" << client->peerAddress().toString();
 
-            const QChar SEPARATING_CH = '\1';
+            QChar   SEPARATING_CH = '\1';
             QString outstr = "";
+            size_t  last = m_topics.size() - 1;
 
-            for (size_t i = 0; i < m_topics.size(); ++i) {
-                if (m_topics[i]->closed()) continue;
+            for (size_t i = 0; i < last; ++i) {
+                if (m_topics[i].closed()) continue;
 
-                outstr += QString::number(i)                    + SEPARATING_CH
-                       + m_topics[i]->name()                    + SEPARATING_CH
-                       + QString::number(m_topics[i]->rating()) + SEPARATING_CH;
+                outstr += QString::number(i)                   + SEPARATING_CH
+                       + m_topics[i].name()                    + SEPARATING_CH
+                       + QString::number(m_topics[i].rating()) + SEPARATING_CH;
             }
+
+            outstr += QString::number(last) + SEPARATING_CH
+                   + m_topics[last].name()  + SEPARATING_CH
+                   + QString::number(m_topics[last].rating());
 
             replyToClient(client, Reply_type::OK, outstr);
         } // GET_TOPICS_LIST
@@ -145,11 +147,11 @@ void VkKillerServer::processClientRequest() {
             QTime time = QTime::currentTime();
             QDate date = QDate::currentDate();
 
-            m_topics[topicNum]->addMessage(client->name(), client->id(), time, date, message);
+            m_topics[topicNum].addMessage(client->name(), client->id(), time, date, message);
             replyToClient(client, Reply_type::OK);
         } // TEXT_MESSAGE
         else if (request == Request_type::CREATE_TOPIC) {
-            if (m_topics.size() >= MAX_TOPICS_AMOUNT) {
+            if (m_openTopicsAmount >= MAX_TOPICS_AMOUNT) {
                 replyToClient(client, Reply_type::FAILED_TOPIC_CREATE);
                 continue;
             }
@@ -175,16 +177,18 @@ void VkKillerServer::processClientRequest() {
             QTime time = QTime::currentTime();
             QDate date = QDate::currentDate();
 
-            std::lock_guard<std::mutex> locker(m_openTopicMutex);
+            QMutexLocker locker(&m_openTopicMutex);
             for (size_t i = 0; i < m_topics.size(); ++i)
-                if (m_topics[i]->closed()) {
-                    if (!m_topics[i]->open(topicName))
+                if (m_topics[i].closed()) {
+                    if (!m_topics[i].open(topicName))
                         continue;
 
-                    m_topics[i]->addMessage(client->name(), client->id(), time, date, message);
+                    m_topics[i].addMessage(client->name(), client->id(), time, date, message);
                     m_openTopicsAmount++;
                     break;
                 }
+
+            replyToClient(client, Reply_type::OK);
         } // CREATE_TOPIC
         else if (request == Request_type::SET_NAME) {
             QString name;
@@ -216,6 +220,16 @@ inline void VkKillerServer::replyToClient(VkKillerClient* client, quint8 reply_t
     out.device()->seek(0);
     out << quint16(buffer.size() - sizeof(quint16));
     client->write(buffer);
+
+    QString address = client->peerAddress().toString();
+    if (reply_type == Reply_type::OK) {
+        if (!msg.length())
+            qDebug() << "\nReply to" << address << ": OK";
+        else
+            qDebug() << "\nReply to" << address << ":" << msg;
+    }
+    else
+        qDebug() << "\nRequest error from" << address << ":" << reply_type;
 }
 
 

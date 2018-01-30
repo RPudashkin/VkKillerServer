@@ -1,4 +1,6 @@
 ﻿#include <QString>
+#include <QMutexLocker>
+#include <cmath>
 #include "vkkiller_topic.h"
 
 
@@ -8,9 +10,7 @@ VkKillerTopic::VkKillerTopic(QObject* parent):
     m_rating    (0),
     m_closed    (true)
 {
-    constexpr size_t MESSAGES_RESERVED = 300;
     m_history.reserve(MESSAGES_RESERVED);
-
     connect(&m_updateRatingTimer, SIGNAL(timeout()), this, SLOT(updateRating()));
 }
 
@@ -76,7 +76,7 @@ VkKillerTopic::Entry& VkKillerTopic::Entry::operator=(Entry&& entry) {
 }
 
 bool VkKillerTopic::open(const QString& topicName) noexcept {
-    std::lock_guard<std::mutex> locker(m_mutex);
+    QMutexLocker locker(&m_mutex);
     if (!m_closed) return false;
 
     m_name      = topicName;
@@ -86,13 +86,12 @@ bool VkKillerTopic::open(const QString& topicName) noexcept {
     m_closed    = false;
 
     m_updateRatingTimer.start(UPDATE_RATING_FREQUENCY);
-
     return true;
 }
 
 
 void VkKillerTopic::close() noexcept {
-    std::lock_guard<std::mutex> locker(m_mutex);
+    QMutexLocker locker(&m_mutex);
     if (m_closed) return;
 
     m_name   = "";
@@ -108,7 +107,7 @@ QString VkKillerTopic::name()  const noexcept {
 }
 
 
-qint16 VkKillerTopic::rating() const noexcept {
+int VkKillerTopic::rating() const noexcept {
     return m_rating;
 }
 
@@ -139,15 +138,16 @@ void VkKillerTopic::addMessage(
     const QDate&   date,
     const QString& message) noexcept
 {
-    std::lock_guard<std::mutex> locker(m_mutex);
+    QMutexLocker locker(&m_mutex);
     m_history.push_back(Entry(authorName, authorId, time, date, message));
 }
 
 
 QString VkKillerTopic::getPackedHistory(size_t msgNum) const noexcept {
     QString outstr = "";
+    size_t  last = m_history.size() - 1;
 
-    for (size_t i = msgNum; i < m_history.size(); ++i) {
+    for (size_t i = msgNum; i < last; ++i) {
         outstr += m_history[i].authorName                   + SEPARATING_CH
                 + QString::number(m_history[i].authorId)    + SEPARATING_CH
                 + m_history[i].time.toString()              + SEPARATING_CH
@@ -155,16 +155,37 @@ QString VkKillerTopic::getPackedHistory(size_t msgNum) const noexcept {
                 + m_history[i].message                      + SEPARATING_CH;
     }
 
+    outstr += m_history[last].authorName                  + SEPARATING_CH
+           + QString::number(m_history[last].authorId)    + SEPARATING_CH
+           + m_history[last].time.toString()              + SEPARATING_CH
+           + m_history[last].date.toString()              + SEPARATING_CH
+           + m_history[last].message;
+
+
     return outstr;
 }
 
 
 void VkKillerTopic::updateRating() noexcept {
+    QTime currTime    = QTime::currentTime();
+    QDate currDate    = QDate::currentDate();
+
+    int secsLife      = m_openTime.secsTo(currTime);
+    int daysLife      = m_openDate.daysTo(currDate);
+    int hoursLife     = secsLife / 3600 + daysLife * 24;
+
+    int   lastMsg     = m_history.size() - 1;
+    QTime lastMsgTime = m_history[lastMsg].time;
+    QDate lastMsgDate = m_history[lastMsg].date;
+
+    int secsLastMsg   = m_openTime.secsTo(lastMsgTime);
+    int daysLastMsg   = m_openDate.daysTo(lastMsgDate);
+    int hoursLastMsg  = secsLastMsg / 3600 + daysLastMsg * 24;
+
+    int alpha = 1 + std::abs((int)MESSAGES_RESERVED - lastMsg + 1);
+    int beta  = hoursLife + std::pow(hoursLastMsg, 2);
+    //m_rating  = 1000 / (alpha * beta);
+
     if (m_rating <= 0)
         close();
-
-    QTime currTime = QTime::currentTime();
-    QDate currDate = QDate::currentDate();
-
-    // some magic here
 }

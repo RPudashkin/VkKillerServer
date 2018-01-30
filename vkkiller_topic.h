@@ -2,10 +2,10 @@
 #define VKKILLER_TOPIC_H
 
 #include <QObject>
+#include <QMutex>
 #include <QTime>
 #include <QDate>
 #include <QTimer>
-#include <mutex>
 #include <vector>
 
 class QString;
@@ -29,7 +29,7 @@ public:
 
     bool    closed() const noexcept;
     QString name  () const noexcept;
-    qint16  rating() const noexcept;
+    int     rating() const noexcept;
     size_t  size  () const noexcept;
 
     // Check that message is valid
@@ -54,7 +54,7 @@ private:
         Entry(const QString& authorName,
               const size_t   authorId,
               const QTime&   time,
-              const QDate& 	 date,
+              const QDate&   date,
               const QString& message);
 
         Entry(Entry&&);
@@ -80,15 +80,16 @@ private slots:
     void updateRating() noexcept;
 
 private:
-    static constexpr int  UPDATE_RATING_FREQUENCY = 300000; // every 5 minutes
-    static constexpr char SEPARATING_CH           = '\1';
+    static constexpr int    UPDATE_RATING_FREQUENCY = 300000; // every 5 minutes
+    static constexpr char   SEPARATING_CH           = '\1';
+    static constexpr size_t MESSAGES_RESERVED       = 300;
 
     QString             m_name;
     QTime               m_openTime;
     QDate               m_openDate;
-    qint16              m_rating;
+    int                 m_rating;
     bool                m_closed;
-    std::mutex          m_mutex;
+    QMutex              m_mutex;
     std::vector<Entry>  m_history; // full topic history
     QTimer              m_updateRatingTimer;
 };
