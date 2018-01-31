@@ -26,6 +26,9 @@ public:
     VkKillerServer& operator=(VkKillerServer&&)         = delete;
 
     bool start(const QHostAddress& address, quint16 port, QString* errMsg = nullptr);
+    void stop() noexcept;
+    bool isWorking() const noexcept;
+    bool loggingEnabled;
 
 protected:
     void incomingConnection(qintptr socketDescriptor);
@@ -36,13 +39,14 @@ private slots:
 
 private:
     using uPtrToClient = std::unique_ptr<VkKillerClient>;
+    std::map<qintptr, uPtrToClient>                 m_clients;
 
     static constexpr quint16 MAX_TOPICS_AMOUNT      = 150;
     static constexpr quint16 MAX_MESSAGE_LENGTH     = 300;
     static constexpr quint8  MAX_CLIENT_NAME_LENGTH = 32;
     static constexpr quint8  MAX_TOPIC_NAME_LENGTH  = 150;
+    static constexpr int     MESSAGING_COOLDOWN     = 30;
 
-    std::map<qintptr, uPtrToClient>                 m_clients;
     std::array<VkKillerTopic, MAX_TOPICS_AMOUNT>    m_topics;
     QMutex                                          m_globalSynchMutex;
     QMutex                                          m_openTopicMutex;

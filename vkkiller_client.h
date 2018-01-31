@@ -2,6 +2,8 @@
 #define VKKILLER_CLIENT_H
 
 #include <QTcpSocket>
+#include <QTime>
+#include <QStringList>
 
 class VkKillerServer;
 
@@ -25,8 +27,10 @@ public:
 private:
     QString     m_name;
     qintptr     m_id;
+    QTime       m_lastMessageTime;
     quint16     m_selectedTopicNum;
     size_t      m_lastReadMsgNum;
+    QStringList m_logs;
 };
 
 #endif // VKKILLER_CLIENT_H

@@ -139,7 +139,7 @@ void VkKillerTopic::addMessage(
     const QString& message) noexcept
 {
     QMutexLocker locker(&m_mutex);
-    m_history.push_back(Entry(authorName, authorId, time, date, message));
+    m_history.emplace_back(Entry(authorName, authorId, time, date, message));
 }
 
 
@@ -182,9 +182,9 @@ void VkKillerTopic::updateRating() noexcept {
     int daysLastMsg   = m_openDate.daysTo(lastMsgDate);
     int hoursLastMsg  = secsLastMsg / 3600 + daysLastMsg * 24;
 
-    int alpha = 1 + std::abs((int)MESSAGES_RESERVED - lastMsg + 1);
-    int beta  = hoursLife + std::pow(hoursLastMsg, 2);
-    //m_rating  = 1000 / (alpha * beta);
+    int alpha         = 1 + std::abs((int)MESSAGES_RESERVED - lastMsg + 1);
+    int beta          = hoursLife + std::pow(hoursLastMsg, 2);
+    //m_rating        = 1000 / (alpha * beta);
 
     if (m_rating <= 0)
         close();

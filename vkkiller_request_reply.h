@@ -18,6 +18,7 @@ namespace Reply_type {
     constexpr quint8 UNKNOWN_TOPIC                  = 0x05;
     constexpr quint8 WRONG_MESSAGE                  = 0x06;
     constexpr quint8 UNKNOWN_REQUEST                = 0x07;
+    constexpr quint8 TOO_FAST_MESSAGING             = 0x08;
 }
 
 #endif // VKKILLER_REQUEST_REPLY_H
