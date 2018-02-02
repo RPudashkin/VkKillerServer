@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>634</width>
-    <height>376</height>
+    <width>712</width>
+    <height>634</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -29,8 +29,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>278</width>
-             <height>270</height>
+             <width>317</width>
+             <height>519</height>
             </rect>
            </property>
            <layout class="QGridLayout" name="gridLayout">
@@ -52,7 +52,7 @@
               <item>
                <widget class="QLabel" name="label_onlineClients">
                 <property name="text">
-                 <string>Online clients: 0</string>
+                 <string>Clients</string>
                 </property>
                </widget>
               </item>
@@ -100,6 +100,9 @@
             </property>
             <property name="text">
              <string>enable logging</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -157,7 +160,7 @@
                <item>
                 <widget class="QLabel" name="label_2">
                  <property name="text">
-                  <string>IPv4:</string>
+                  <string>IP:</string>
                  </property>
                  <property name="alignment">
                   <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
@@ -165,7 +168,7 @@
                 </widget>
                </item>
                <item>
-                <widget class="QLineEdit" name="lineEdit_IPv4">
+                <widget class="QLineEdit" name="lineEdit_IpAddress">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                    <horstretch>0</horstretch>
@@ -350,8 +353,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>634</width>
-     <height>31</height>
+     <width>712</width>
+     <height>34</height>
     </rect>
    </property>
   </widget>

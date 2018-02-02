@@ -139,7 +139,7 @@ void VkKillerTopic::addMessage(
     const QString& message) noexcept
 {
     QMutexLocker locker(&m_mutex);
-    m_history.emplace_back(Entry(authorName, authorId, time, date, message));
+    m_history.emplace_back(authorName, authorId, time, date, message);
 }
 
 
@@ -151,14 +151,14 @@ QString VkKillerTopic::getPackedHistory(size_t msgNum) const noexcept {
         outstr += m_history[i].authorName                   + SEPARATING_CH
                 + QString::number(m_history[i].authorId)    + SEPARATING_CH
                 + m_history[i].time.toString()              + SEPARATING_CH
-                + m_history[i].date.toString()              + SEPARATING_CH
+                + m_history[i].date.toString("dd.MM.yyyy")  + SEPARATING_CH
                 + m_history[i].message                      + SEPARATING_CH;
     }
 
     outstr += m_history[last].authorName                  + SEPARATING_CH
            + QString::number(m_history[last].authorId)    + SEPARATING_CH
            + m_history[last].time.toString()              + SEPARATING_CH
-           + m_history[last].date.toString()              + SEPARATING_CH
+           + m_history[last].date.toString("dd.MM.yyyy")  + SEPARATING_CH
            + m_history[last].message;
 
 

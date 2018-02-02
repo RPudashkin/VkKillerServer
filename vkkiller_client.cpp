@@ -1,4 +1,5 @@
-﻿#include "vkkiller_client.h"
+﻿#include <QHostAddress>
+#include "vkkiller_client.h"
 
 
 VkKillerClient::VkKillerClient(qintptr socketDescriptor, QObject* parent):
@@ -6,7 +7,9 @@ VkKillerClient::VkKillerClient(qintptr socketDescriptor, QObject* parent):
     m_name              ("anonymous"),
     m_id                (socketDescriptor),
     m_selectedTopicNum  (0),
-    m_lastReadMsgNum    (0)
+    m_lastReadMsgNum    (0),
+    m_loggingEnabled    (false)
+
 {
     setSocketDescriptor(socketDescriptor);
 }
@@ -19,6 +22,32 @@ QString VkKillerClient::name() const noexcept {
 
 qintptr VkKillerClient::id() const noexcept {
     return m_id;
+}
+
+
+QHostAddress VkKillerClient::address() const noexcept {
+    return peerAddress();
+}
+
+
+QStringList VkKillerClient::logs() const noexcept {
+    return m_logs;
+}
+
+
+void VkKillerClient::addEntryToLogs(
+        const QString& entry,
+        const QTime&   time,
+        const QDate&   date) noexcept
+{
+    QString tmp = "["
+            + time.toString()
+            + "]    ["
+            + date.toString("dd.MM.yyyy")
+            + "]\n"
+            + entry
+            + "\n";
+    m_logs << tmp;
 }
 
 

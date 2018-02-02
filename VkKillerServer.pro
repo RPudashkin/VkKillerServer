@@ -1,5 +1,4 @@
 QT += network core gui
-QT -= console
 
 CONFIG += c++14
 CONFIG -= app_bundle
@@ -16,6 +15,7 @@ SOURCES += \
     vkkiller_server.cpp \
     vkkiller_client.cpp \
     vkkiller_topic.cpp  \
+    vkkiller_logs_dialog.cpp \
     mainwindow.cpp
 
 HEADERS += \
@@ -23,7 +23,9 @@ HEADERS += \
     vkkiller_client.h \
     vkkiller_topic.h \
     vkkiller_request_reply.h \
+    vkkiller_logs_dialog.h \
     mainwindow.h
 
 FORMS  += \
-    mainwindow.ui
+    mainwindow.ui \
+    vkkiller_logs_dialog.ui

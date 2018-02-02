@@ -1,4 +1,4 @@
-﻿#include <QString>
+#include <QString>
 #include <QHostAddress>
 #include <QByteArray>
 #include <QDataStream>
@@ -13,7 +13,7 @@
 VkKillerServer::VkKillerServer(QObject* parent):
     QTcpServer          (parent),
     m_openTopicsAmount  (0),
-    loggingEnabled      (false)
+    m_loggingEnabled    (false)
 {}
 
 
@@ -22,7 +22,7 @@ VkKillerServer::~VkKillerServer() {
 }
 
 
-bool VkKillerServer::start(const QHostAddress& address, quint16 port, QString* errMsg) {
+bool VkKillerServer::start(const QHostAddress& address, quint16 port, QString* errMsg) noexcept {
     if (!listen(address, port)) {
         if (errMsg != nullptr)
             *errMsg = errorString();
@@ -33,30 +33,48 @@ bool VkKillerServer::start(const QHostAddress& address, quint16 port, QString* e
     return true;
 }
 
+
 void VkKillerServer::stop() noexcept {
     for (auto& client: m_clients)
-        client.second->close();
+        client->close();
     m_clients.clear();
 
     close();
 }
 
 
-bool VkKillerServer::isWorking() const noexcept {
-    return isListening();
+void VkKillerServer::enableLogging(bool flag) noexcept {
+    m_loggingEnabled = flag;
+
+    if (!m_loggingEnabled) {
+        for (auto& client: m_clients) {
+            client->m_loggingEnabled = false;
+            client->m_logs.clear();
+        }
+    }
+    else {
+        for (auto& client: m_clients)
+            client->m_loggingEnabled = true;
+    }
+}
+
+
+void VkKillerServer::enableLoggingFor(const VkKillerClient* client, bool flag) noexcept {
+    m_clients[client->id()]->m_loggingEnabled = flag;
 }
 
 
 void VkKillerServer::incomingConnection(qintptr socketDescriptor) {
-    QMutexLocker locker(&m_globalSynchMutex);
-    m_clients[socketDescriptor] = std::make_unique<VkKillerClient>(socketDescriptor);
-    VkKillerClient* client = m_clients[socketDescriptor].get();
+    m_clients[socketDescriptor] = new VkKillerClient(socketDescriptor, this);
+    VkKillerClient* client = m_clients[socketDescriptor];
 
-    connect(client, SIGNAL(disconnected()), this, SLOT(disconnectClient()));
-    connect(client, SIGNAL(readyRead()),    this, SLOT(processClientRequest()));
+    connect(client, SIGNAL(disconnected()), this, SLOT(disconnectClient    ()));
+    connect(client, SIGNAL(readyRead   ()), this, SLOT(processClientRequest()));
 
-    if (loggingEnabled)
-        client->m_logs << "### Client has connected ###";
+    emit clientConnected(client);
+
+    if (m_loggingEnabled)
+        client->addEntryToLogs("Client has connected");
 }
 
 
@@ -96,9 +114,11 @@ void VkKillerServer::processClientRequest() {
         }
 
         if (request == Request_type::GET_TOPIC_HISTORY) {
-            if (loggingEnabled) {
-                client->m_logs << "\nRequest: GET_TOPIC_HISTORY"
-                << "\nParams: topicNum =" << QString::number(topicNum);
+            if (client->m_loggingEnabled) {
+                QString entry = "Request: GET_TOPIC_HISTORY"
+                        "\nParams: topicNum = "
+                        + QString::number(topicNum);
+                client->addEntryToLogs(entry);
             }
 
             client->m_selectedTopicNum  = topicNum;
@@ -108,9 +128,11 @@ void VkKillerServer::processClientRequest() {
             replyToClient(client, Reply_type::OK, history);
         } // GET_TOPIC_HISTORY
         else if (request == Request_type::GET_LAST_MESSAGES_FROM_TOPIC) {
-            if (loggingEnabled) {
-                client->m_logs << "\nRequest: GET_LAST_MESSAGES_FROM_TOPIC"
-                << "\nParams: topicNum =" << QString::number(topicNum);
+            if (client->m_loggingEnabled) {
+                QString entry = "Request: GET_LAST_MESSAGES_FROM_TOPIC"
+                                "\nParams: topicNum = "
+                              + QString::number(topicNum);
+                client->addEntryToLogs(entry);
             }
 
             QString history;
@@ -127,9 +149,8 @@ void VkKillerServer::processClientRequest() {
             replyToClient(client, Reply_type::OK, history);
         } // GET_LAST_MESSAGES_FROM_TOPIC
         else if (request == Request_type::GET_TOPICS_LIST) {
-            if (loggingEnabled) {
-                client->m_logs << "\nRequest: GET_TOPICS_LIST";
-            }
+            if (client->m_loggingEnabled)
+                client->addEntryToLogs("Request: GET_TOPICS_LIST");
 
             QChar   SEPARATING_CH = '\1';
             QString outstr = "";
@@ -153,10 +174,16 @@ void VkKillerServer::processClientRequest() {
             QString message;
             in >> message;
 
-            if (loggingEnabled) {
-                client->m_logs << "\nRequest: TEXT_MESSAGE"
-                << "\nParams: message =" << message
-                << ", topicNum =" << QString::number(topicNum);
+            QTime time = QTime::currentTime();
+            QDate date = QDate::currentDate();
+
+            if (client->m_loggingEnabled) {
+                QString entry = "Request: TEXT_MESSAGE"
+                                "\nParams: message = "
+                                + message
+                                + ",  topicNum = "
+                                + QString::number(topicNum);
+                client->addEntryToLogs(entry, time, date);
             }
 
             if (message.length() > MAX_MESSAGE_LENGTH ||
@@ -165,9 +192,6 @@ void VkKillerServer::processClientRequest() {
                 replyToClient(client, Reply_type::WRONG_MESSAGE);
                 continue;
             }
-
-            QTime time = QTime::currentTime();
-            QDate date = QDate::currentDate();
 
             if (client->m_lastMessageTime.secsTo(time) < MESSAGING_COOLDOWN) {
                 replyToClient(client, Reply_type::TOO_FAST_MESSAGING);
@@ -187,6 +211,18 @@ void VkKillerServer::processClientRequest() {
             QString topicName, message;
             in >> topicName >> message;
 
+            QTime time = QTime::currentTime();
+            QDate date = QDate::currentDate();
+
+            if (client->m_loggingEnabled) {
+                QString entry = "Request: CREATE_TOPIC"
+                                "\nParams: topicName = "
+                                + topicName
+                                + ", message = "
+                                + message;
+                client->addEntryToLogs(entry, time, date);
+            }
+
             if (topicName.length() > MAX_TOPIC_NAME_LENGTH) {
                 replyToClient(client, Reply_type::WRONG_TOPIC_NAME);
                 continue;
@@ -197,16 +233,7 @@ void VkKillerServer::processClientRequest() {
             {
                 replyToClient(client, Reply_type::WRONG_MESSAGE);
                 continue;
-            }
-
-            if (loggingEnabled) {
-                client->m_logs << "\nRequest: CREATE_TOPIC"
-                << "\nParams: topicName =" << topicName
-                << ", message =" << message;
-            }
-
-            QTime time = QTime::currentTime();
-            QDate date = QDate::currentDate();
+            } 
 
             QMutexLocker locker(&m_openTopicMutex);
             for (size_t i = 0; i < m_topics.size(); ++i)
@@ -225,9 +252,11 @@ void VkKillerServer::processClientRequest() {
             QString name;
             in >> name;
 
-            if (loggingEnabled) {
-                client->m_logs << "\nRequest: SET_NAME"
-                << "\nParams: name =" << name;
+            if (client->m_loggingEnabled) {
+                QString entry = "Request: SET_NAME"
+                                "\nParams: name = "
+                                + name;
+                client->addEntryToLogs(entry);
             }
 
             if (name.length() > MAX_CLIENT_NAME_LENGTH ||
@@ -254,13 +283,17 @@ inline void VkKillerServer::replyToClient(VkKillerClient* client, quint8 reply_t
     out << quint16(buffer.size() - sizeof(quint16));
     client->write(buffer);
 
-    if (loggingEnabled) {
+    if (client->m_loggingEnabled) {
+        QString entry;
+
         if (reply_type == Reply_type::OK && !msg.length())
-            client->m_logs << "\nReply: OK";
+            entry = "Reply: OK";
         else if (reply_type == Reply_type::OK && msg.length())
-            client->m_logs << "\nReply:" << msg;
+            entry = "Reply: " + msg;
         else
-            client->m_logs << "Request error:" << QString::number(reply_type);
+            entry = "Request error: " + QString::number(reply_type);
+
+        client->addEntryToLogs(entry);
     }
 }
 
@@ -268,9 +301,11 @@ inline void VkKillerServer::replyToClient(VkKillerClient* client, quint8 reply_t
 void VkKillerServer::disconnectClient() {
     VkKillerClient* client = static_cast<VkKillerClient*>(sender());
 
-    if (loggingEnabled)
-        client->m_logs << "\n### Client has disconnected ###";
+    emit clientDisconnected(client);
+
+    if (client->m_loggingEnabled)
+        client->addEntryToLogs("Client has disconnected");
 
     client->close();
-    m_clients.erase(client->id());
+    m_clients.remove(client->id());
 }
