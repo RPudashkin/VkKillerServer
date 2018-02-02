@@ -14,24 +14,27 @@ class VkKillerClient: private QTcpSocket {
 
 public:
     VkKillerClient(qintptr socketDescriptor, QObject* parent = nullptr);
+    VkKillerClient(VkKillerClient&&);
+    VkKillerClient& operator=(VkKillerClient&&);
 
     VkKillerClient(const VkKillerClient&)            = delete;
-    VkKillerClient(VkKillerClient&&)                 = delete;
     VkKillerClient& operator=(const VkKillerClient&) = delete;
-    VkKillerClient& operator=(VkKillerClient&&)      = delete;
 
     QString      name   () const noexcept;
     qintptr      id     () const noexcept;
     QHostAddress address() const noexcept;
     QStringList  logs   () const noexcept;
 
+    static bool isValidName(const QString& name) noexcept;
+
+private:
+    // Move VkKillerClient to *this
+    void move(VkKillerClient&&) noexcept;
+
     void addEntryToLogs(const QString& entry,
                         const QTime&   time = QTime::currentTime(),
                         const QDate&   date = QDate::currentDate()) noexcept;
 
-    static bool isValidName(const QString& name) noexcept;
-
-private:
     QString     m_name;
     qintptr     m_id;
     QTime       m_lastMessageTime;

@@ -15,6 +15,38 @@ VkKillerClient::VkKillerClient(qintptr socketDescriptor, QObject* parent):
 }
 
 
+void VkKillerClient::move(VkKillerClient&& client) noexcept {
+    m_name 						= std::move(client.m_name);
+    m_logs						= std::move(client.m_logs);
+    m_id   						= client.m_id;
+    m_selectedTopicNum 			= client.m_selectedTopicNum;
+    m_lastReadMsgNum 			= client.m_lastReadMsgNum;
+    m_loggingEnabled 			= client.m_loggingEnabled;
+    client.m_name 				= "anonymous";
+    client.m_id					= 0;
+    client.m_selectedTopicNum 	= 0;
+    client.m_lastReadMsgNum 	= 0;
+    client.m_loggingEnabled 	= false;
+    client.m_logs.clear();
+
+    setSocketDescriptor(client.socketDescriptor());
+    client.close();
+}
+
+
+VkKillerClient::VkKillerClient(VkKillerClient&& client): QTcpSocket() {
+    if (this != &client)
+        move(std::move(client));
+}
+
+
+VkKillerClient& VkKillerClient::operator=(VkKillerClient&& client) {
+    if (this != &client)
+        move(std::move(client));
+    return *this;
+}
+
+
 QString VkKillerClient::name() const noexcept {
     return m_name;
 }
@@ -40,6 +72,8 @@ void VkKillerClient::addEntryToLogs(
         const QTime&   time,
         const QDate&   date) noexcept
 {
+    if (!m_loggingEnabled) return;
+
     QString tmp = "["
             + time.toString()
             + "]    ["
