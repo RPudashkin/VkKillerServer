@@ -16,17 +16,17 @@ VkKillerClient::VkKillerClient(qintptr socketDescriptor, QObject* parent):
 
 
 void VkKillerClient::move(VkKillerClient&& client) noexcept {
-    m_name 						= std::move(client.m_name);
-    m_logs						= std::move(client.m_logs);
-    m_id   						= client.m_id;
-    m_selectedTopicNum 			= client.m_selectedTopicNum;
-    m_lastReadMsgNum 			= client.m_lastReadMsgNum;
-    m_loggingEnabled 			= client.m_loggingEnabled;
-    client.m_name 				= "anonymous";
-    client.m_id					= 0;
-    client.m_selectedTopicNum 	= 0;
-    client.m_lastReadMsgNum 	= 0;
-    client.m_loggingEnabled 	= false;
+    m_name                      = std::move(client.m_name);
+    m_logs                      = std::move(client.m_logs);
+    m_id                        = client.m_id;
+    m_selectedTopicNum          = client.m_selectedTopicNum;
+    m_lastReadMsgNum            = client.m_lastReadMsgNum;
+    m_loggingEnabled            = client.m_loggingEnabled;
+    client.m_name               = "anonymous";
+    client.m_id                 = 0;
+    client.m_selectedTopicNum   = 0;
+    client.m_lastReadMsgNum     = 0;
+    client.m_loggingEnabled     = false;
     client.m_logs.clear();
 
     setSocketDescriptor(client.socketDescriptor());
