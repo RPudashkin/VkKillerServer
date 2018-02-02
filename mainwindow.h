@@ -24,20 +24,24 @@ public:
     ~MainWindow();
 
 private slots:
-    void on_startServer_clicked();
-    void on_stopServer_clicked();
-    void on_enableLogging_stateChanged(int arg1);
-    void on_close_clicked();
+    void on_startServer_clicked         ();
+    void on_stopServer_clicked          ();
+    void on_enableLogging_stateChanged  (int arg1);
+    void on_close_clicked               ();
 
-    void addClient      (const VkKillerClient* client); // add client to cliens list
-    void delClient      (const VkKillerClient* client); // delete client from clients list
-    void showLogsDialog (QModelIndex index);
+    void markClientAsOnline  (const VkKillerClient* client);
+    void markClientAsOffline (const VkKillerClient* client);
+    void showLogsDialog      (QModelIndex index);
 
 private:
     using uPtrToServer = std::unique_ptr<VkKillerServer>;
 
-
     QVector<const VkKillerClient*> 	m_clients;
+    /*
+     * key   - client->id()
+     * value - row at clientsList
+     */
+    QMap<qintptr, size_t>           m_rowsAtClientsList;
     Ui::MainWindow*                 ui;
     uPtrToServer                    m_server;
 };

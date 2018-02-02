@@ -15,10 +15,10 @@ MainWindow::MainWindow(QWidget* parent):
     ui->label_serverStatus->setText("Server status: <font color = 'red'><b>disabled</b></font>");
 
     connect(m_server.get(),  &VkKillerServer::clientConnected,
-            this,            &MainWindow::addClient);
+            this,            &MainWindow::markClientAsOnline);
 
     connect(m_server.get(),  &VkKillerServer::clientDisconnected,
-            this,            &MainWindow::delClient);
+            this,            &MainWindow::markClientAsOffline);
 
     connect(ui->clientsList, &QListWidget::clicked,
             this,            &MainWindow::showLogsDialog);
@@ -28,17 +28,30 @@ MainWindow::MainWindow(QWidget* parent):
 
 
 MainWindow::~MainWindow() {
+    for (auto& client: m_clients)
+        client = nullptr;
+    m_clients.clear();
+
     delete ui;
 }
 
 
-void MainWindow::addClient(const VkKillerClient* client) {
-    QString item = client->address().toString();
-    ui->clientsList->addItem(item);
-    m_clients.push_back(client);
+void MainWindow::markClientAsOnline(const VkKillerClient* client) {
+    auto    row   = m_rowsAtClientsList.find(client->id());
+    QString item  = client->address().toString() + "    (online)";
 
     if (ui->enableLogging->isChecked())
         m_server->enableLoggingFor(client, true);
+
+
+    if (row != m_rowsAtClientsList.end()) {
+        ui->clientsList->itemAt(row.value(), 0)->setText(item);
+        return;
+    }
+
+    ui->clientsList->addItem(item);
+    m_clients.push_back(client);
+    m_rowsAtClientsList[client->id()] = m_clients.size() - 1;
 }
 
 
@@ -52,7 +65,10 @@ void MainWindow::showLogsDialog(QModelIndex index) {
 }
 
 
-void MainWindow::delClient(const VkKillerClient* client) {
+void MainWindow::markClientAsOffline(const VkKillerClient* client) {
+    auto    row   = m_rowsAtClientsList.find(client->id());
+    QString item  = client->address().toString() + "    (offline)";
+    ui->clientsList->itemAt(row.value(), 0)->setText(item);
 }
 
 
