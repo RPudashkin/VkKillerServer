@@ -199,10 +199,13 @@ void VkKillerServer::processClientRequest() {
                 continue;
             }
 
+            /*
             if (client->m_lastMessageTime.secsTo(time) < MESSAGING_COOLDOWN) {
                 replyToClient(client, Reply_type::TOO_FAST_MESSAGING);
                 continue;
             }
+            */
+
             client->m_lastMessageTime = time;
 
             m_topics[topicNum].addMessage(client->name(), client->id(), time, date, message);

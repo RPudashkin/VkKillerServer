@@ -44,7 +44,7 @@ private:
     static constexpr quint16 MAX_MESSAGE_LENGTH     = 300;
     static constexpr quint8  MAX_CLIENT_NAME_LENGTH = 32;
     static constexpr quint8  MAX_TOPIC_NAME_LENGTH  = 150;
-    static constexpr int     MESSAGING_COOLDOWN     = 30;
+    static constexpr int     MESSAGING_COOLDOWN     = 15;
 
     QMap<quintptr, VkKillerClient*>                 m_clients;
     std::array<VkKillerTopic, MAX_TOPICS_AMOUNT>    m_topics;
