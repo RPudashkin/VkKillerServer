@@ -10,6 +10,9 @@
 #include "vkkiller_request_reply.h"
 
 
+#include <iostream>
+
+
 VkKillerServer::VkKillerServer(QObject* parent):
     QTcpServer          (parent),
     m_openTopicsAmount  (0),
@@ -60,7 +63,9 @@ void VkKillerServer::enableLogging(bool flag) noexcept {
 
 
 void VkKillerServer::enableLoggingFor(const VkKillerClient* client, bool flag) noexcept {
-    m_clients[client->id()]->m_loggingEnabled = flag;
+    auto it = m_clients.find(client->id());
+    if (it == m_clients.end()) return;
+    it.value()->m_loggingEnabled = flag;
 }
 
 
@@ -164,9 +169,10 @@ void VkKillerServer::processClientRequest() {
                        + QString::number(m_topics[i].rating()) + SEPARATING_CH;
             }
 
-            outstr += QString::number(last) + SEPARATING_CH
-                   + m_topics[last].name()  + SEPARATING_CH
-                   + QString::number(m_topics[last].rating());
+            if (!m_topics[last].closed())
+                outstr += QString::number(last) + SEPARATING_CH
+                       + m_topics[last].name()  + SEPARATING_CH
+                       + QString::number(m_topics[last].rating());
 
             replyToClient(client, Reply_type::OK, outstr);
         } // GET_TOPICS_LIST
@@ -200,7 +206,6 @@ void VkKillerServer::processClientRequest() {
             client->m_lastMessageTime = time;
 
             m_topics[topicNum].addMessage(client->name(), client->id(), time, date, message);
-            replyToClient(client, Reply_type::OK);
         } // TEXT_MESSAGE
         else if (request == Request_type::CREATE_TOPIC) {
             if (m_openTopicsAmount >= MAX_TOPICS_AMOUNT) {
@@ -245,8 +250,6 @@ void VkKillerServer::processClientRequest() {
                     m_openTopicsAmount++;
                     break;
                 }
-
-            replyToClient(client, Reply_type::OK);
         } // CREATE_TOPIC
         else if (request == Request_type::SET_NAME) {
             QString name;

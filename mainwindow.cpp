@@ -5,6 +5,9 @@
 #include "vkkiller_server.h"
 #include "vkkiller_client.h"
 
+#include <iostream>
+#include <QListWidget>
+
 
 MainWindow::MainWindow(QWidget* parent):
     QMainWindow (parent),
@@ -20,8 +23,13 @@ MainWindow::MainWindow(QWidget* parent):
     connect(m_server.get(),  &VkKillerServer::clientDisconnected,
             this,            &MainWindow::markClientAsOffline);
 
-    connect(ui->clientsList, &QListWidget::clicked,
+    connect(ui->clientsList, &QListWidget::doubleClicked,
             this,            &MainWindow::showLogsDialog);
+
+    connect(ui->clientsList, &QListWidget::itemChanged,
+            this,            &MainWindow::changeLoggingEnabled);
+
+
 
     m_server->enableLogging(true);
 }
@@ -37,17 +45,20 @@ MainWindow::~MainWindow() {
 
 
 void MainWindow::markClientAsOnline(const VkKillerClient* client) {
-    auto    row   = m_rowsAtClientsList.find(client->id());
-    QString item  = client->address().toString() + "    (online)";
+    auto    row = m_rowsAtClientsList.find(client->id());
+    QString str = client->address().toString() + "    (online)";
 
     if (ui->enableLogging->isChecked())
         m_server->enableLoggingFor(client, true);
 
-
     if (row != m_rowsAtClientsList.end()) {
-        ui->clientsList->itemAt(row.value(), 0)->setText(item);
+        ui->clientsList->itemAt(row.value(), 0)->setText(str);
         return;
     }
+
+    QListWidgetItem* item = new QListWidgetItem(str, ui->clientsList);
+    item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+    item->setCheckState(Qt::Checked);
 
     ui->clientsList->addItem(item);
     m_clients.push_back(client);
@@ -67,8 +78,15 @@ void MainWindow::showLogsDialog(QModelIndex index) {
 
 void MainWindow::markClientAsOffline(const VkKillerClient* client) {
     auto    row   = m_rowsAtClientsList.find(client->id());
-    QString item  = client->address().toString() + "    (offline)";
-    ui->clientsList->itemAt(row.value(), 0)->setText(item);
+    QString str  = client->address().toString() + "    (offline)";
+    ui->clientsList->itemAt(row.value(), 0)->setText(str);
+}
+
+
+void MainWindow::changeLoggingEnabled(QListWidgetItem* item) {
+    int  row  = ui->clientsList->row(item);
+    if (row >= m_clients.size()) return;
+    m_server->enableLoggingFor(m_clients[row], item->checkState());
 }
 
 
@@ -123,10 +141,16 @@ void MainWindow::on_stopServer_clicked() {
 
 
 void MainWindow::on_enableLogging_stateChanged(int arg1) {
-    if (arg1)
+    if (arg1) {
+        for(int i = 0; i < ui->clientsList->count(); ++i)
+            ui->clientsList->item(i)->setCheckState(Qt::Checked);
         m_server->enableLogging(true);
-    else
+    }
+    else {
+        for(int i = 0; i < ui->clientsList->count(); ++i)
+            ui->clientsList->item(i)->setCheckState(Qt::Unchecked);
         m_server->enableLogging(false);
+    }
 }
 
 

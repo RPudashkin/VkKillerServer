@@ -14,6 +14,7 @@ namespace Ui {
 
 class VkKillerServer;
 class VkKillerClient;
+class QListWidgetItem;
 
 
 class MainWindow: public QMainWindow {
@@ -31,7 +32,8 @@ private slots:
 
     void markClientAsOnline  (const VkKillerClient* client);
     void markClientAsOffline (const VkKillerClient* client);
-    void showLogsDialog      (QModelIndex index);
+    void showLogsDialog      (QModelIndex      index);
+    void changeLoggingEnabled(QListWidgetItem* item);
 
 private:
     using uPtrToServer = std::unique_ptr<VkKillerServer>;
