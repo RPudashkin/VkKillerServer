@@ -23,8 +23,9 @@ HEADERS += \
     vkkiller_client.h \
     vkkiller_topic.h \
     vkkiller_request_reply.h \
+    vkkiller_server_constants.h \
     mainwindow.h \
-    vkkiller_logs_dialog.h
+    vkkiller_logs_dialog.h \
 
 FORMS  += \
     mainwindow.ui \

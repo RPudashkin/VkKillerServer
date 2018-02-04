@@ -1,7 +1,11 @@
 ﻿#include <QString>
 #include <QMutexLocker>
 #include <cmath>
+
 #include "vkkiller_topic.h"
+#include "vkkiller_server_constants.h"
+
+using Server_constant::SEPARATING_CH;
 
 
 VkKillerTopic::VkKillerTopic(QObject* parent):
@@ -184,7 +188,7 @@ void VkKillerTopic::updateRating() noexcept {
 
     int alpha         = 1 + std::abs((int)MESSAGES_RESERVED - lastMsg + 1);
     int beta          = hoursLife + std::pow(hoursLastMsg, 2);
-    //m_rating        = 1000 / (alpha * beta);
+    //m_rating          = 1000 / (alpha * beta);
 
     if (m_rating <= 0)
         close();

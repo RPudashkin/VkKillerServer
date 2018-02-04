@@ -81,7 +81,6 @@ private slots:
 
 private:
     static constexpr int    UPDATE_RATING_FREQUENCY = 300000; // every 5 minutes
-    static constexpr char   SEPARATING_CH           = '\1';
     static constexpr size_t MESSAGES_RESERVED       = 300;
 
     QString             m_name;

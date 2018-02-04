@@ -1,4 +1,4 @@
-#include <QString>
+﻿#include <QString>
 #include <QHostAddress>
 #include <QByteArray>
 #include <QDataStream>
@@ -8,9 +8,6 @@
 #include "vkkiller_server.h"
 #include "vkkiller_client.h"
 #include "vkkiller_request_reply.h"
-
-
-#include <iostream>
 
 
 VkKillerServer::VkKillerServer(QObject* parent):
@@ -105,25 +102,20 @@ void VkKillerServer::processClientRequest() {
         quint8 request;
         in >> request;
 
-        quint16 topicNum = 0;
-        if (request == Request_type::GET_TOPIC_HISTORY              ||
-            request == Request_type::GET_LAST_MESSAGES_FROM_TOPIC   ||
-            request == Request_type::TEXT_MESSAGE)
-        {
+        if (request == Request_type::GET_TOPIC_HISTORY) {
+            quint16 topicNum;
             in >> topicNum;
 
-            if (topicNum >= m_topics.size() || m_topics[topicNum].closed()) {
-                replyToClient(client, Reply_type::UNKNOWN_TOPIC);
-                continue;
-            }
-        }
-
-        if (request == Request_type::GET_TOPIC_HISTORY) {
             if (client->m_loggingEnabled) {
                 QString entry = "Request: GET_TOPIC_HISTORY"
                         "\nParams: topicNum = "
                         + QString::number(topicNum);
                 client->addEntryToLogs(entry);
+            }
+
+            if (topicNum >= m_topics.size() || m_topics[topicNum].closed()) {
+                replyToClient(client, Reply_type::UNKNOWN_TOPIC);
+                continue;
             }
 
             client->m_selectedTopicNum  = topicNum;
@@ -133,6 +125,9 @@ void VkKillerServer::processClientRequest() {
             replyToClient(client, Reply_type::OK, history);
         } // GET_TOPIC_HISTORY
         else if (request == Request_type::GET_LAST_MESSAGES_FROM_TOPIC) {
+            quint16 topicNum;
+            in >> topicNum;
+
             if (client->m_loggingEnabled) {
                 QString entry = "Request: GET_LAST_MESSAGES_FROM_TOPIC"
                                 "\nParams: topicNum = "
@@ -140,11 +135,16 @@ void VkKillerServer::processClientRequest() {
                 client->addEntryToLogs(entry);
             }
 
+            if (topicNum >= m_topics.size() || m_topics[topicNum].closed()) {
+                replyToClient(client, Reply_type::UNKNOWN_TOPIC);
+                continue;
+            }
+
             QString history;
+            client->m_lastReadMsgNum = m_topics[topicNum].size() - 1;
 
             if (client->m_selectedTopicNum != topicNum) {
                 client->m_selectedTopicNum  = topicNum;
-                client->m_lastReadMsgNum    = m_topics[topicNum].size() - 1;
                 history = m_topics[topicNum].getPackedHistory();
             }
             else {
@@ -157,7 +157,6 @@ void VkKillerServer::processClientRequest() {
             if (client->m_loggingEnabled)
                 client->addEntryToLogs("Request: GET_TOPICS_LIST");
 
-            QChar   SEPARATING_CH = '\1';
             QString outstr = "";
             size_t  last = m_topics.size() - 1;
 
@@ -177,8 +176,9 @@ void VkKillerServer::processClientRequest() {
             replyToClient(client, Reply_type::OK, outstr);
         } // GET_TOPICS_LIST
         else if (request == Request_type::TEXT_MESSAGE) {
+            quint16 topicNum;
             QString message;
-            in >> message;
+            in >> topicNum >> message;
 
             QTime time = QTime::currentTime();
             QDate date = QDate::currentDate();
@@ -192,6 +192,11 @@ void VkKillerServer::processClientRequest() {
                 client->addEntryToLogs(entry, time, date);
             }
 
+            if (topicNum >= m_topics.size() || m_topics[topicNum].closed()) {
+                replyToClient(client, Reply_type::UNKNOWN_TOPIC);
+                continue;
+            }
+
             if (message.length() > MAX_MESSAGE_LENGTH ||
                !VkKillerTopic::isValidMessage(message))
             {
@@ -199,23 +204,17 @@ void VkKillerServer::processClientRequest() {
                 continue;
             }
 
-            /*
-            if (client->m_lastMessageTime.secsTo(time) < MESSAGING_COOLDOWN) {
-                replyToClient(client, Reply_type::TOO_FAST_MESSAGING);
-                continue;
-            }
-            */
+            if (!client->m_lastMessageTime.isNull())
+                if (client->m_lastMessageTime.secsTo(time) < MESSAGING_COOLDOWN) {
+                    replyToClient(client, Reply_type::TOO_FAST_MESSAGING);
+                    continue;
+                }
 
             client->m_lastMessageTime = time;
 
             m_topics[topicNum].addMessage(client->name(), client->id(), time, date, message);
         } // TEXT_MESSAGE
         else if (request == Request_type::CREATE_TOPIC) {
-            if (m_openTopicsAmount >= MAX_TOPICS_AMOUNT) {
-                replyToClient(client, Reply_type::FAILED_TOPIC_CREATE);
-                continue;
-            }
-
             QString topicName, message;
             in >> topicName >> message;
 
@@ -231,6 +230,11 @@ void VkKillerServer::processClientRequest() {
                 client->addEntryToLogs(entry, time, date);
             }
 
+            if (m_openTopicsAmount >= MAX_TOPICS_AMOUNT) {
+                replyToClient(client, Reply_type::FAILED_TOPIC_CREATE);
+                continue;
+            }
+
             if (topicName.length() > MAX_TOPIC_NAME_LENGTH) {
                 replyToClient(client, Reply_type::WRONG_TOPIC_NAME);
                 continue;
@@ -242,6 +246,8 @@ void VkKillerServer::processClientRequest() {
                 replyToClient(client, Reply_type::WRONG_MESSAGE);
                 continue;
             } 
+
+            client->m_lastMessageTime = time;
 
             QMutexLocker locker(&m_openTopicMutex);
             for (size_t i = 0; i < m_topics.size(); ++i)
