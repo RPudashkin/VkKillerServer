@@ -32,8 +32,8 @@ public:
     int     rating() const noexcept;
     size_t  size  () const noexcept;
 
-    // Check that message is valid
-    static bool isValidMessage(const QString& message) noexcept;
+    static bool isValidTopicName(const QString& topicName) noexcept;
+    static bool isValidMessage  (const QString& message)   noexcept;
 
     // Thread-safe operation
     void addMessage(const QString& authorName,

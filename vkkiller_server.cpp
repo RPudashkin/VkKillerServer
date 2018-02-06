@@ -197,9 +197,7 @@ void VkKillerServer::processClientRequest() {
                 continue;
             }
 
-            if (message.length() > MAX_MESSAGE_LENGTH ||
-               !VkKillerTopic::isValidMessage(message))
-            {
+            if (!VkKillerTopic::isValidMessage(message)) {
                 replyToClient(client, Reply_type::WRONG_MESSAGE);
                 continue;
             }
@@ -235,14 +233,12 @@ void VkKillerServer::processClientRequest() {
                 continue;
             }
 
-            if (topicName.length() > MAX_TOPIC_NAME_LENGTH) {
+            if (!VkKillerTopic::isValidTopicName(topicName)) {
                 replyToClient(client, Reply_type::WRONG_TOPIC_NAME);
                 continue;
             }
 
-            if (message.length() > MAX_MESSAGE_LENGTH ||
-               !VkKillerTopic::isValidMessage(message))
-            {
+            if (!VkKillerTopic::isValidMessage(message)) {
                 replyToClient(client, Reply_type::WRONG_MESSAGE);
                 continue;
             } 
@@ -271,9 +267,7 @@ void VkKillerServer::processClientRequest() {
                 client->addEntryToLogs(entry);
             }
 
-            if (name.length() > MAX_CLIENT_NAME_LENGTH ||
-               !VkKillerClient::isValidName(name))
-            {
+            if (!VkKillerClient::isValidName(name)) {
                 replyToClient(client, Reply_type::WRONG_NAME);
                 continue;
             }

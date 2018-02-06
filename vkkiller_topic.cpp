@@ -5,8 +5,6 @@
 #include "vkkiller_topic.h"
 #include "vkkiller_server_constants.h"
 
-using Server_constant::SEPARATING_CH;
-
 
 VkKillerTopic::VkKillerTopic(QObject* parent):
     QObject     (parent),
@@ -126,9 +124,26 @@ bool VkKillerTopic::closed() const noexcept {
 }
 
 
+bool VkKillerTopic::isValidTopicName(const QString& topicName) noexcept {
+    int len = topicName.length();
+
+    if (len > Server_constant::MAX_TOPIC_NAME_LENGTH || !len)
+        return false;
+
+    if (topicName[len-1] == Server_constant::SEPARATING_CH)
+        return false;
+
+    return true;
+}
+
+
 bool VkKillerTopic::isValidMessage(const QString& message) noexcept {
     int len = message.length();
-    if (message[len-1] == SEPARATING_CH)
+
+    if (len > Server_constant::MAX_MESSAGE_LENGTH || !len)
+        return false;
+
+    if (message[len-1] == Server_constant::SEPARATING_CH)
         return false;
 
     return true;
@@ -148,6 +163,8 @@ void VkKillerTopic::addMessage(
 
 
 QString VkKillerTopic::getPackedHistory(size_t msgNum) const noexcept {
+    using Server_constant::SEPARATING_CH;
+
     QString outstr = "";
     size_t  last = m_history.size() - 1;
 

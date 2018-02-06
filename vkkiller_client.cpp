@@ -1,5 +1,6 @@
 ﻿#include <QHostAddress>
 #include "vkkiller_client.h"
+#include "vkkiller_server_constants.h"
 
 
 VkKillerClient::VkKillerClient(qintptr socketDescriptor, QObject* parent):
@@ -86,8 +87,13 @@ void VkKillerClient::addEntryToLogs(
 
 
 bool VkKillerClient::isValidName(const QString& name) noexcept {
+    int len = name.length();
+
+    if (len > Server_constant::MAX_CLIENT_NAME_LENGTH || !len)
+        return false;
+
     for (QChar ch: name) {
-        if (!(ch.isLetterOrNumber() || ch == '#' || ch == '_'))
+        if (!(ch.isLetterOrNumber() || ch == '_'))
             return false;
     }
 
