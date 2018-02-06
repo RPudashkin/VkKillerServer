@@ -9,8 +9,6 @@
 #include "vkkiller_client.h"
 #include "vkkiller_request_reply.h"
 
-#include <iostream>
-
 
 VkKillerServer::VkKillerServer(QObject* parent):
     QTcpServer          (parent),
@@ -119,7 +117,7 @@ void VkKillerServer::processClientRequest() {
 
             if (topicNum >= m_topics.size() || m_topics[topicNum].closed()) {
                 replyToClient(client, Reply_type::UNKNOWN_TOPIC);
-                continue;
+                break;
             }
 
             client->m_selectedTopicNum  = topicNum;
@@ -141,7 +139,7 @@ void VkKillerServer::processClientRequest() {
 
             if (topicNum >= m_topics.size() || m_topics[topicNum].closed()) {
                 replyToClient(client, Reply_type::UNKNOWN_TOPIC);
-                continue;
+                break;
             }
 
             QString history;
@@ -165,7 +163,7 @@ void VkKillerServer::processClientRequest() {
             size_t  last = m_topics.size() - 1;
 
             for (size_t i = 0; i < last; ++i) {
-                if (m_topics[i].closed()) continue;
+                if (m_topics[i].closed()) break;
 
                 outstr += QString::number(i)                   + SEPARATING_CH
                        + m_topics[i].name()                    + SEPARATING_CH
@@ -198,18 +196,18 @@ void VkKillerServer::processClientRequest() {
 
             if (topicNum >= m_topics.size() || m_topics[topicNum].closed()) {
                 replyToClient(client, Reply_type::UNKNOWN_TOPIC);
-                continue;
+                break;
             }
 
             if (!VkKillerTopic::isValidMessage(message)) {
                 replyToClient(client, Reply_type::WRONG_MESSAGE);
-                continue;
+                break;
             }
 
             if (!client->m_lastMessageTime.isNull())
                 if (client->m_lastMessageTime.secsTo(time) < MESSAGING_COOLDOWN) {
                     replyToClient(client, Reply_type::TOO_FAST_MESSAGING);
-                    continue;
+                    break;
                 }
 
             client->m_lastMessageTime = time;
@@ -232,22 +230,28 @@ void VkKillerServer::processClientRequest() {
                 client->addEntryToLogs(entry, time, date);
             }
 
+            if (!client->m_lastTopicCreatingTime.isNull())
+                if (client->m_lastTopicCreatingTime.secsTo(time) < TOPIC_CREATING_COOLDOWN) {
+                    replyToClient(client, Reply_type::TOO_FAST_TOPIC_CREATING);
+                    break;
+                }
+
             if (m_openTopicsAmount >= MAX_TOPICS_AMOUNT) {
                 replyToClient(client, Reply_type::FAILED_TOPIC_CREATE);
-                continue;
+                break;
             }
 
             if (!VkKillerTopic::isValidTopicName(topicName)) {
                 replyToClient(client, Reply_type::WRONG_TOPIC_NAME);
-                continue;
+                break;
             }
 
             if (!VkKillerTopic::isValidMessage(message)) {
                 replyToClient(client, Reply_type::WRONG_MESSAGE);
-                continue;
+                break;
             } 
 
-            client->m_lastMessageTime = time;
+            client->m_lastTopicCreatingTime = time;
 
             QMutexLocker locker(&m_openTopicMutex);
             for (size_t i = 0; i < m_topics.size(); ++i)
@@ -273,7 +277,7 @@ void VkKillerServer::processClientRequest() {
 
             if (!VkKillerClient::isValidName(name)) {
                 replyToClient(client, Reply_type::WRONG_NAME);
-                continue;
+                break;
             }
 
             client->m_name = std::move(name);

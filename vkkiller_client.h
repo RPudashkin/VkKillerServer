@@ -38,6 +38,7 @@ private:
     QString     m_name;
     qintptr     m_id;
     QTime       m_lastMessageTime;
+    QTime		m_lastTopicCreatingTime;
     quint16     m_selectedTopicNum;
     size_t      m_lastReadMsgNum;
     bool        m_loggingEnabled;
