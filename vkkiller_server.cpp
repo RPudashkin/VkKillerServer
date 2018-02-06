@@ -9,6 +9,8 @@
 #include "vkkiller_client.h"
 #include "vkkiller_request_reply.h"
 
+#include <iostream>
+
 
 VkKillerServer::VkKillerServer(QObject* parent):
     QTcpServer          (parent),
@@ -35,10 +37,12 @@ bool VkKillerServer::start(const QHostAddress& address, quint16 port, QString* e
 
 
 void VkKillerServer::stop() noexcept {
-    for (auto& client: m_clients)
-        client->close();
+    for (auto& client: m_clients) {
+        client->setSocketDescriptor(-1);
+        emit clientDisconnected(client);
+    }
+    
     m_clients.clear();
-
     close();
 }
 
