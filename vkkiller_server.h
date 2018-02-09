@@ -10,7 +10,6 @@
 
 using namespace Server_constant;
 
-class QString;
 class QHostAddress;
 class VkKillerClient;
 

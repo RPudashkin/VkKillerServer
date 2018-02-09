@@ -8,8 +8,6 @@
 #include <QTimer>
 #include <vector>
 
-class QString;
-
 
 class VkKillerTopic: private QObject {
     Q_OBJECT

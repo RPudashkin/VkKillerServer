@@ -1,4 +1,4 @@
-﻿#include <QString>
+﻿#include <QStringBuilder>
 #include <QHostAddress>
 #include <QByteArray>
 #include <QDataStream>
@@ -111,7 +111,7 @@ void VkKillerServer::processClientRequest() {
             if (client->m_loggingEnabled) {
                 QString entry = "Request: GET_TOPIC_HISTORY"
                         "\nParams: topicNum = "
-                        + QString::number(topicNum);
+                        % QString::number(topicNum);
                 client->addEntryToLogs(entry);
             }
 
@@ -133,7 +133,7 @@ void VkKillerServer::processClientRequest() {
             if (client->m_loggingEnabled) {
                 QString entry = "Request: GET_LAST_MESSAGES_FROM_TOPIC"
                                 "\nParams: topicNum = "
-                              + QString::number(topicNum);
+                              % QString::number(topicNum);
                 client->addEntryToLogs(entry);
             }
 
@@ -165,15 +165,17 @@ void VkKillerServer::processClientRequest() {
             for (size_t i = 0; i < last; ++i) {
                 if (m_topics[i].closed()) break;
 
-                outstr += QString::number(i)                   + SEPARATING_CH
-                       + m_topics[i].name()                    + SEPARATING_CH
-                       + QString::number(m_topics[i].rating()) + SEPARATING_CH;
+                outstr = outstr
+                       % QString::number(i)                    % SEPARATING_CH
+                       % m_topics[i].name()                    % SEPARATING_CH
+                       % QString::number(m_topics[i].rating()) % SEPARATING_CH;
             }
 
             if (!m_topics[last].closed())
-                outstr += QString::number(last) + SEPARATING_CH
-                       + m_topics[last].name()  + SEPARATING_CH
-                       + QString::number(m_topics[last].rating());
+                outstr = outstr
+                       % QString::number(last)  % SEPARATING_CH
+                       % m_topics[last].name()  % SEPARATING_CH
+                       % QString::number(m_topics[last].rating());
 
             replyToClient(client, Reply_type::OK, outstr);
         } // GET_TOPICS_LIST
@@ -188,9 +190,9 @@ void VkKillerServer::processClientRequest() {
             if (client->m_loggingEnabled) {
                 QString entry = "Request: TEXT_MESSAGE"
                                 "\nParams: message = "
-                                + message
-                                + ",  topicNum = "
-                                + QString::number(topicNum);
+                                % message
+                                % ",  topicNum = "
+                                % QString::number(topicNum);
                 client->addEntryToLogs(entry, time, date);
             }
 
@@ -224,9 +226,9 @@ void VkKillerServer::processClientRequest() {
             if (client->m_loggingEnabled) {
                 QString entry = "Request: CREATE_TOPIC"
                                 "\nParams: topicName = "
-                                + topicName
-                                + ", message = "
-                                + message;
+                                % topicName
+                                % ",  message = "
+                                % message;
                 client->addEntryToLogs(entry, time, date);
             }
 
@@ -271,7 +273,7 @@ void VkKillerServer::processClientRequest() {
             if (client->m_loggingEnabled) {
                 QString entry = "Request: SET_NAME"
                                 "\nParams: name = "
-                                + name;
+                                % name;
                 client->addEntryToLogs(entry);
             }
 
@@ -303,7 +305,7 @@ inline void VkKillerServer::replyToClient(VkKillerClient* client, quint8 reply_t
         if (reply_type == Reply_type::OK && !msg.length())
             entry = "Reply: OK";
         else if (reply_type == Reply_type::OK && msg.length())
-            entry = "Reply: " + msg;
+            entry = "Reply: " % msg;
         else
             entry = "Request error: " + QString::number(reply_type);
 

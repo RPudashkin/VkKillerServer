@@ -1,4 +1,4 @@
-﻿#include <QString>
+﻿#include <QStringBuilder>
 #include <QMutexLocker>
 #include <cmath>
 
@@ -169,18 +169,20 @@ QString VkKillerTopic::getPackedHistory(size_t msgNum) const noexcept {
     size_t  last = m_history.size() - 1;
 
     for (size_t i = msgNum; i < last; ++i) {
-        outstr += m_history[i].authorName                   + SEPARATING_CH
-                + QString::number(m_history[i].authorId)    + SEPARATING_CH
-                + m_history[i].time.toString()              + SEPARATING_CH
-                + m_history[i].date.toString("dd.MM.yyyy")  + SEPARATING_CH
-                + m_history[i].message                      + SEPARATING_CH;
+        outstr = outstr
+                % m_history[i].authorName                   % SEPARATING_CH
+                % QString::number(m_history[i].authorId)    % SEPARATING_CH
+                % m_history[i].time.toString()              % SEPARATING_CH
+                % m_history[i].date.toString("dd.MM.yyyy")  % SEPARATING_CH
+                % m_history[i].message                      % SEPARATING_CH;
     }
 
-    outstr += m_history[last].authorName                  + SEPARATING_CH
-           + QString::number(m_history[last].authorId)    + SEPARATING_CH
-           + m_history[last].time.toString()              + SEPARATING_CH
-           + m_history[last].date.toString("dd.MM.yyyy")  + SEPARATING_CH
-           + m_history[last].message;
+    outstr = outstr
+           % m_history[last].authorName                   % SEPARATING_CH
+           % QString::number(m_history[last].authorId)    % SEPARATING_CH
+           % m_history[last].time.toString()              % SEPARATING_CH
+           % m_history[last].date.toString("dd.MM.yyyy")  % SEPARATING_CH
+           % m_history[last].message;
 
 
     return outstr;
