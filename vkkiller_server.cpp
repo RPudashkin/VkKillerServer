@@ -77,6 +77,8 @@ void VkKillerServer::incomingConnection(qintptr socketDescriptor) {
 
     if (m_loggingEnabled)
         client->addEntryToLogs("Client has connected");
+
+    replyToClient(client, Reply_type::OK);
 }
 
 
@@ -292,7 +294,10 @@ inline void VkKillerServer::replyToClient(VkKillerClient* client, quint8 reply_t
     QDataStream out(&buffer, QIODevice::WriteOnly);
     out.setVersion(QDataStream::Qt_DefaultCompiledVersion);
 
-    out << quint16(0) << reply_type << msg;
+    out << quint16(0) << reply_type;
+    if (!msg.isEmpty())
+        out << msg;
+
     out.device()->seek(0);
     out << quint16(buffer.size() - sizeof(quint16));
     client->write(buffer);

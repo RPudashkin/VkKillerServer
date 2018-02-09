@@ -49,7 +49,7 @@ private:
     quint16                                         m_openTopicsAmount;
     bool                                            m_loggingEnabled;
 
-    void replyToClient(VkKillerClient* client, quint8 reply_type, const QString& msg = "") noexcept;
+    void replyToClient(VkKillerClient* client,  quint8 reply_type, const QString& msg = "") noexcept;
 };
 
 #endif // VKKILLER_SERVER_H
