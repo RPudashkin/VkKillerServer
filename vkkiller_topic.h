@@ -1,12 +1,9 @@
 ﻿#ifndef VKKILLER_TOPIC_H
 #define VKKILLER_TOPIC_H
 
-#include <QObject>
 #include <QMutex>
 #include <QTime>
-#include <QDate>
 #include <QTimer>
-#include <vector>
 
 
 class VkKillerTopic: private QObject {

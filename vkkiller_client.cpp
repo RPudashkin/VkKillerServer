@@ -1,4 +1,6 @@
 ﻿#include <QHostAddress>
+#include <QStringBuilder>
+
 #include "vkkiller_client.h"
 #include "vkkiller_server_constants.h"
 
@@ -76,12 +78,12 @@ void VkKillerClient::addEntryToLogs(
     if (!m_loggingEnabled) return;
 
     QString tmp = "["
-            + time.toString()
-            + "]    ["
-            + date.toString("dd.MM.yyyy")
-            + "]\n"
-            + entry
-            + "\n";
+            % time.toString()
+            % "]    ["
+            % date.toString("dd.MM.yyyy")
+            % "]\n"
+            % entry
+            % "\n";
     m_logs << tmp;
 }
 

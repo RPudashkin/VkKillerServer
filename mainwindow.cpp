@@ -1,12 +1,11 @@
 ﻿#include <QMessageBox>
+
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "vkkiller_logs_dialog.h"
+#include "logs_dialog.h"
+
 #include "vkkiller_server.h"
 #include "vkkiller_client.h"
-
-#include <iostream>
-#include <QListWidget>
 
 
 MainWindow::MainWindow(QWidget* parent):
@@ -68,7 +67,7 @@ void MainWindow::markClientAsOnline(const VkKillerClient* client) {
 
 void MainWindow::showLogsDialog(QModelIndex index) {
     const VkKillerClient* client = m_clients[index.row()];
-    VkKillerLogsDialog*   dialog = new VkKillerLogsDialog(this);
+    LogsDialog*   dialog = new LogsDialog(this);
 
     dialog->setWindowTitle(client->address().toString());
     dialog->loadLogs(client->logs());

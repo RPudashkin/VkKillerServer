@@ -4,7 +4,6 @@
 #include <QMainWindow>
 #include <QModelIndex>
 #include <QTimer>
-#include <QVector>
 #include <memory>
 
 

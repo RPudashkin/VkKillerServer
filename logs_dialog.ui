@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>VkKillerLogsDialog</class>
- <widget class="QDialog" name="VkKillerLogsDialog">
+ <class>LogsDialog</class>
+ <widget class="QDialog" name="LogsDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -87,7 +87,7 @@
   <connection>
    <sender>close</sender>
    <signal>clicked()</signal>
-   <receiver>VkKillerLogsDialog</receiver>
+   <receiver>LogsDialog</receiver>
    <slot>close()</slot>
    <hints>
     <hint type="sourcelabel">

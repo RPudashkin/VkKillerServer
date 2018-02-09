@@ -1,8 +1,6 @@
 ﻿#include <QStringBuilder>
 #include <QHostAddress>
-#include <QByteArray>
 #include <QDataStream>
-#include <QDate>
 #include <QMutexLocker>
 
 #include "vkkiller_server.h"
