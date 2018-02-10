@@ -317,6 +317,7 @@ inline void VkKillerServer::replyToClient(VkKillerClient* client, quint8 reply_t
         {
             if (!msg.isEmpty())
                 entry = "Reply: " % msg;
+            else return;
         }
         else
             entry = "Request error: " % QString::number(reply_type);
