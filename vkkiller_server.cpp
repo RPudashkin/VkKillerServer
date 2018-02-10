@@ -142,6 +142,11 @@ void VkKillerServer::processClientRequest() {
                 break;
             }
 
+            if (client->m_lastReadMsgNum == m_topics[topicNum].size() - 1) {
+                replyToClient(client, Reply_type::OK);
+                continue;
+            }
+
             QString history;
             client->m_lastReadMsgNum = m_topics[topicNum].size() - 1;
 
