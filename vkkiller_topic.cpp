@@ -5,6 +5,8 @@
 #include "vkkiller_topic.h"
 #include "vkkiller_server_constants.h"
 
+#include <iostream>
+
 
 VkKillerTopic::VkKillerTopic(QObject* parent):
     QObject     (parent),
@@ -190,24 +192,28 @@ QString VkKillerTopic::getPackedHistory(size_t msgNum) const noexcept {
 
 
 void VkKillerTopic::updateRating() noexcept {
-    QTime currTime    = QTime::currentTime();
-    QDate currDate    = QDate::currentDate();
+    QTime currTime       = QTime::currentTime();
+    QDate currDate       = QDate::currentDate();
 
-    int secsLife      = m_openTime.secsTo(currTime);
-    int daysLife      = m_openDate.daysTo(currDate);
-    int hoursLife     = secsLife / 3600 + daysLife * 24;
+    float secsLife       = m_openTime.secsTo(currTime);
+    float daysLife       = m_openDate.daysTo(currDate);
+    float minutesLife    = secsLife / 60.0f + daysLife * 1440.0f;
 
-    int   lastMsg     = m_history.size() - 1;
-    QTime lastMsgTime = m_history[lastMsg].time;
-    QDate lastMsgDate = m_history[lastMsg].date;
+    int   msgAmount      = m_history.size();
+    int   lastMsg        = msgAmount - 1;
+    QTime lastMsgTime    = m_history[lastMsg].time;
+    QDate lastMsgDate    = m_history[lastMsg].date;
 
-    int secsLastMsg   = m_openTime.secsTo(lastMsgTime);
-    int daysLastMsg   = m_openDate.daysTo(lastMsgDate);
-    int hoursLastMsg  = secsLastMsg / 3600 + daysLastMsg * 24;
+    float secsLastMsg    = m_openTime.secsTo(lastMsgTime);
+    float daysLastMsg    = m_openDate.daysTo(lastMsgDate);
+    float minutesLastMsg = secsLastMsg / 60.0f + daysLastMsg * 1440.0f;
 
-    int alpha         = 1 + std::abs((int)MESSAGES_RESERVED - lastMsg + 1);
-    int beta          = hoursLife + std::pow(hoursLastMsg, 2);
-    //m_rating          = 1000 / (alpha * beta);
+    float alpha          = std::fabs(MESSAGES_RESERVED / 2 - msgAmount);
+    float beta           = minutesLife * minutesLife + minutesLastMsg * minutesLastMsg;
+    m_rating             = 60000.0 / (alpha + beta);
+
+    std::cout << "Name: "   << m_name.toStdString() << std::endl;
+    std::cout << "Rating: " << m_rating << std::endl;
 
     if (m_rating <= 0)
         close();

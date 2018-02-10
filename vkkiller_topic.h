@@ -75,8 +75,8 @@ private slots:
     void updateRating() noexcept;
 
 private:
-    static constexpr int    UPDATE_RATING_FREQUENCY = 300000; // every 5 minutes
-    static constexpr size_t MESSAGES_RESERVED       = 300;
+    static constexpr int UPDATE_RATING_FREQUENCY = 180000; // every 3 minutes
+    static constexpr int MESSAGES_RESERVED       = 300;
 
     QString             m_name;
     QTime               m_openTime;
