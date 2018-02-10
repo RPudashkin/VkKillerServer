@@ -78,7 +78,7 @@ void VkKillerServer::incomingConnection(qintptr socketDescriptor) {
     if (m_loggingEnabled)
         client->addEntryToLogs("Client has connected");
 
-    replyToClient(client, Reply_type::OK);
+    replyToClient(client, Reply_type::CONNECTED);
 }
 
 
@@ -124,7 +124,7 @@ void VkKillerServer::processClientRequest() {
             client->m_lastReadMsgNum    = m_topics[topicNum].size() - 1;
 
             QString history = m_topics[topicNum].getPackedHistory();
-            replyToClient(client, Reply_type::OK, history);
+            replyToClient(client, Reply_type::TOPIC_HISTORY, history);
         } // GET_TOPIC_HISTORY
         else if (request == Request_type::GET_LAST_MESSAGES_FROM_TOPIC) {
             quint16 topicNum;
@@ -143,7 +143,7 @@ void VkKillerServer::processClientRequest() {
             }
 
             if (client->m_lastReadMsgNum == m_topics[topicNum].size() - 1) {
-                replyToClient(client, Reply_type::OK);
+                replyToClient(client, Reply_type::LAST_MESSAGES);
                 continue;
             }
 
@@ -158,7 +158,7 @@ void VkKillerServer::processClientRequest() {
                 size_t msgNum = client->m_lastReadMsgNum;
                 history = m_topics[topicNum].getPackedHistory(msgNum);
             }
-            replyToClient(client, Reply_type::OK, history);
+            replyToClient(client, Reply_type::LAST_MESSAGES, history);
         } // GET_LAST_MESSAGES_FROM_TOPIC
         else if (request == Request_type::GET_TOPICS_LIST) {
             if (client->m_loggingEnabled)
@@ -182,7 +182,7 @@ void VkKillerServer::processClientRequest() {
                        % m_topics[last].name()  % SEPARATING_CH
                        % QString::number(m_topics[last].rating());
 
-            replyToClient(client, Reply_type::OK, outstr);
+            replyToClient(client, Reply_type::TOPICS_LIST, outstr);
         } // GET_TOPICS_LIST
         else if (request == Request_type::TEXT_MESSAGE) {
             quint16 topicNum;
@@ -310,12 +310,16 @@ inline void VkKillerServer::replyToClient(VkKillerClient* client, quint8 reply_t
     if (client->m_loggingEnabled) {
         QString entry;
 
-        if (reply_type == Reply_type::OK && !msg.length())
-            entry = "Reply: OK";
-        else if (reply_type == Reply_type::OK && msg.length())
-            entry = "Reply: " % msg;
+        if (reply_type == Reply_type::CONNECTED      ||
+            reply_type == Reply_type::TOPICS_LIST    ||
+            reply_type == Reply_type::TOPIC_HISTORY  ||
+            reply_type == Reply_type::LAST_MESSAGES)
+        {
+            if (!msg.isEmpty())
+                entry = "Reply: " % msg;
+        }
         else
-            entry = "Request error: " + QString::number(reply_type);
+            entry = "Request error: " % QString::number(reply_type);
 
         client->addEntryToLogs(entry);
     }
