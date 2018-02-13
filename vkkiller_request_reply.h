@@ -15,16 +15,15 @@ namespace Reply_type {
     constexpr quint8 TOPICS_LIST                    = 2;
     constexpr quint8 TOPIC_HISTORY                  = 3;
     constexpr quint8 LAST_MESSAGES                  = 4;
-    constexpr quint8 THERE_IS_NEW_TOPIC				= 5;
 
-    constexpr quint8 WRONG_NAME                     = 6;
-    constexpr quint8 FAILED_TOPIC_CREATE            = 7;
-    constexpr quint8 WRONG_TOPIC_NAME               = 8;
-    constexpr quint8 UNKNOWN_TOPIC                  = 9;
-    constexpr quint8 WRONG_MESSAGE                  = 10;
-    constexpr quint8 UNKNOWN_REQUEST                = 11;
-    constexpr quint8 TOO_FAST_MESSAGING             = 12;
-    constexpr quint8 TOO_FAST_TOPIC_CREATING        = 13;
+    constexpr quint8 WRONG_NAME                     = 5;
+    constexpr quint8 FAILED_TOPIC_CREATE            = 6;
+    constexpr quint8 WRONG_TOPIC_NAME               = 7;
+    constexpr quint8 UNKNOWN_TOPIC                  = 8;
+    constexpr quint8 WRONG_MESSAGE                  = 9;
+    constexpr quint8 UNKNOWN_REQUEST                = 10;
+    constexpr quint8 TOO_FAST_MESSAGING             = 11;
+    constexpr quint8 TOO_FAST_TOPIC_CREATING        = 12;
 }
 
 #endif // VKKILLER_REQUEST_REPLY_H
