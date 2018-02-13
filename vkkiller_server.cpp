@@ -164,25 +164,7 @@ void VkKillerServer::processClientRequest() {
             if (client->m_loggingEnabled)
                 client->addEntryToLogs("Request: GET_TOPICS_LIST");
 
-            QString outstr = "";
-            size_t  last = m_topics.size() - 1;
-
-            for (size_t i = 0; i < last; ++i) {
-                if (m_topics[i].closed()) break;
-
-                outstr = outstr
-                       % QString::number(i)                    % SEPARATING_CH
-                       % m_topics[i].name()                    % SEPARATING_CH
-                       % QString::number(m_topics[i].rating()) % SEPARATING_CH;
-            }
-
-            if (!m_topics[last].closed())
-                outstr = outstr
-                       % QString::number(last)  % SEPARATING_CH
-                       % m_topics[last].name()  % SEPARATING_CH
-                       % QString::number(m_topics[last].rating());
-
-            replyToClient(client, Reply_type::TOPICS_LIST, outstr);
+            replyToClient(client, Reply_type::TOPICS_LIST, getPackedTopicsList());
         } // GET_TOPICS_LIST
         else if (request == Request_type::TEXT_MESSAGE) {
             quint16 topicNum;
@@ -270,6 +252,10 @@ void VkKillerServer::processClientRequest() {
                     m_openTopicsAmount++;
                     break;
                 }
+
+            QString packedTopicList = getPackedTopicsList();
+            for (auto& client: m_clients)
+                replyToClient(client, Reply_type::TOPICS_LIST, packedTopicList);
         } // CREATE_TOPIC
         else if (request == Request_type::SET_NAME) {
             QString name;
@@ -291,6 +277,29 @@ void VkKillerServer::processClientRequest() {
         } // SET_NAME
         else replyToClient(client, Reply_type::UNKNOWN_REQUEST);
     }
+}
+
+
+QString VkKillerServer::getPackedTopicsList() const noexcept {
+    QString packedTopicsList = "";
+    size_t  last = m_topics.size() - 1;
+
+    for (size_t i = 0; i < last; ++i) {
+        if (m_topics[i].closed()) continue;
+
+        packedTopicsList = packedTopicsList
+               % QString::number(i)                    % SEPARATING_CH
+               % m_topics[i].name()                    % SEPARATING_CH
+               % QString::number(m_topics[i].rating()) % SEPARATING_CH;
+    }
+
+    if (!m_topics[last].closed())
+        packedTopicsList = packedTopicsList
+               % QString::number(last)  % SEPARATING_CH
+               % m_topics[last].name()  % SEPARATING_CH
+               % QString::number(m_topics[last].rating());
+
+    return packedTopicsList;
 }
 
 
