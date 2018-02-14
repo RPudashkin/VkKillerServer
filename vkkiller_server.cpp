@@ -120,6 +120,9 @@ void VkKillerServer::processClientRequest() {
                 break;
             }
 
+            m_topics[client->m_selectedTopicNum].delReader(client);
+            m_topics[topicNum].addReader(client);
+
             client->m_selectedTopicNum  = topicNum;
             client->m_lastReadMsgNum    = m_topics[topicNum].size() - 1;
 
@@ -199,9 +202,15 @@ void VkKillerServer::processClientRequest() {
                     break;
                 }
 
-            client->m_lastMessageTime = time;
-
             m_topics[topicNum].addMessage(client->name(), client->id(), time, date, message);
+            client->m_lastMessageTime = time;
+            client->m_lastReadMsgNum  = m_topics[topicNum].size() - 1;
+
+            auto topicReaders = m_topics[topicNum].getReaders();
+            for (auto& reader: topicReaders) {
+                QString history = m_topics[topicNum].getPackedHistory(client->m_lastReadMsgNum);
+                replyToClient(reader, Reply_type::LAST_MESSAGES, history);
+            }
         } // TEXT_MESSAGE
         else if (request == Request_type::CREATE_TOPIC) {
             QString topicName, message;
@@ -344,6 +353,7 @@ void VkKillerServer::disconnectClient() {
     if (client->m_loggingEnabled)
         client->addEntryToLogs("Client has disconnected");
 
+    m_topics[client->m_selectedTopicNum].delReader(client);
     client->close();
     m_clients.remove(client->id());
 }

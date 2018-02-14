@@ -4,6 +4,9 @@
 #include <QMutex>
 #include <QTime>
 #include <QTimer>
+#include <QMap>
+
+class VkKillerClient;
 
 
 class VkKillerTopic: private QObject {
@@ -13,6 +16,7 @@ public:
     explicit VkKillerTopic(QObject* parent = nullptr);
     VkKillerTopic(VkKillerTopic&&);
     VkKillerTopic& operator=(VkKillerTopic&&);
+   ~VkKillerTopic();
 
     VkKillerTopic(const VkKillerTopic&)             = delete;
     VkKillerTopic& operator=(const VkKillerTopic&)  = delete;
@@ -29,6 +33,12 @@ public:
 
     static bool isValidTopicName(const QString& topicName) noexcept;
     static bool isValidMessage  (const QString& message)   noexcept;
+
+    // Thread-safe operations
+    void addReader(VkKillerClient* client) noexcept;
+    void delReader(VkKillerClient* client) noexcept;
+
+    QMap<size_t, VkKillerClient*> getReaders() const noexcept;
 
     // Thread-safe operation
     void addMessage(const QString& authorName,
@@ -78,14 +88,16 @@ private:
     static constexpr int UPDATE_RATING_FREQUENCY = 180000; // every 3 minutes
     static constexpr int MESSAGES_RESERVED       = 300;
 
-    QString             m_name;
-    QTime               m_openTime;
-    QDate               m_openDate;
-    int                 m_rating;
-    bool                m_closed;
-    QMutex              m_mutex;
-    std::vector<Entry>  m_history; // full topic history
-    QTimer              m_updateRatingTimer;
+    QString             			m_name;
+    QTime               			m_openTime;
+    QDate               			m_openDate;
+    int                 			m_rating;
+    bool                			m_closed;
+    QMutex              			m_synchReadersMutex;
+    QMutex              			m_synchWritersMutex;
+    QMap<size_t, VkKillerClient*> 	m_readers;
+    std::vector<Entry>  			m_history; // full topic history
+    QTimer              			m_updateRatingTimer;
 };
 
 #endif // VKKILLER_TOPIC_H

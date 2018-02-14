@@ -4,6 +4,7 @@
 
 #include "vkkiller_topic.h"
 #include "vkkiller_server_constants.h"
+#include "vkkiller_client.h"
 
 #include <iostream>
 
@@ -21,6 +22,7 @@ VkKillerTopic::VkKillerTopic(QObject* parent):
 
 void VkKillerTopic::move(VkKillerTopic&& topic) noexcept {
     m_name          = std::move(topic.m_name);
+    m_readers       = std::move(topic.m_readers);
     m_history       = std::move(topic.m_history);
     m_openTime      = std::move(topic.m_openTime);
     m_openDate      = std::move(topic.m_openDate);
@@ -41,6 +43,13 @@ VkKillerTopic& VkKillerTopic::operator=(VkKillerTopic&& topic) {
     if (this != &topic)
         move(std::move(topic));
     return *this;
+}
+
+
+VkKillerTopic::~VkKillerTopic() {
+    for (auto& reader: m_readers)
+        reader = nullptr;
+    m_readers.clear();
 }
 
 
@@ -80,7 +89,7 @@ VkKillerTopic::Entry& VkKillerTopic::Entry::operator=(Entry&& entry) {
 }
 
 bool VkKillerTopic::open(const QString& topicName) noexcept {
-    QMutexLocker locker(&m_mutex);
+    QMutexLocker locker(&m_synchWritersMutex);
     if (!m_closed) return false;
 
     m_name      = topicName;
@@ -95,7 +104,7 @@ bool VkKillerTopic::open(const QString& topicName) noexcept {
 
 
 void VkKillerTopic::close() noexcept {
-    QMutexLocker locker(&m_mutex);
+    QMutexLocker locker(&m_synchWritersMutex);
     if (m_closed) return;
 
     m_name   = "";
@@ -103,6 +112,10 @@ void VkKillerTopic::close() noexcept {
     m_rating = 0;
     m_history.clear();
     m_updateRatingTimer.stop();
+
+    for (auto& reader: m_readers)
+        reader = nullptr;
+    m_readers.clear();
 }
 
 
@@ -152,6 +165,23 @@ bool VkKillerTopic::isValidMessage(const QString& message) noexcept {
 }
 
 
+void VkKillerTopic::addReader(VkKillerClient* client) noexcept {
+    QMutexLocker locker(&m_synchReadersMutex);
+    m_readers[client->id()] = client;
+}
+
+
+void VkKillerTopic::delReader(VkKillerClient* client) noexcept {
+    QMutexLocker locker(&m_synchReadersMutex);
+    m_readers.remove(client->id());
+}
+
+
+QMap<size_t, VkKillerClient*> VkKillerTopic::getReaders() const noexcept {
+    return m_readers;
+}
+
+
 void VkKillerTopic::addMessage(
     const QString& authorName,
     const size_t   authorId,
@@ -159,7 +189,7 @@ void VkKillerTopic::addMessage(
     const QDate&   date,
     const QString& message) noexcept
 {
-    QMutexLocker locker(&m_mutex);
+    QMutexLocker locker(&m_synchWritersMutex);
     m_history.emplace_back(authorName, authorId, time, date, message);
 }
 
