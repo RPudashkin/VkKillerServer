@@ -88,16 +88,16 @@ private:
     static constexpr int UPDATE_RATING_FREQUENCY = 180000; // every 3 minutes
     static constexpr int MESSAGES_RESERVED       = 300;
 
-    QString             			m_name;
-    QTime               			m_openTime;
-    QDate               			m_openDate;
-    int                 			m_rating;
-    bool                			m_closed;
-    QMutex              			m_synchReadersMutex;
-    QMutex              			m_synchWritersMutex;
-    QMap<size_t, VkKillerClient*> 	m_readers;
-    std::vector<Entry>  			m_history; // full topic history
-    QTimer              			m_updateRatingTimer;
+    QString                         m_name;
+    QTime                           m_openTime;
+    QDate                           m_openDate;
+    int                             m_rating;
+    bool                            m_closed;
+    QMutex                          m_synchReadersMutex;
+    QMutex                          m_synchWritersMutex;
+    QMap<size_t, VkKillerClient*>   m_readers;
+    std::vector<Entry>              m_history; // full topic history
+    QTimer                          m_updateRatingTimer;
 };
 
 #endif // VKKILLER_TOPIC_H

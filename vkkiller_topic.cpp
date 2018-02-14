@@ -88,6 +88,7 @@ VkKillerTopic::Entry& VkKillerTopic::Entry::operator=(Entry&& entry) {
     return *this;
 }
 
+
 bool VkKillerTopic::open(const QString& topicName) noexcept {
     QMutexLocker locker(&m_synchWritersMutex);
     if (!m_closed) return false;
