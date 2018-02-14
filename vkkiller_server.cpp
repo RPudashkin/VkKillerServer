@@ -1,6 +1,7 @@
 ﻿#include <QStringBuilder>
 #include <QHostAddress>
 #include <QDataStream>
+#include <QThread>
 #include <QMutexLocker>
 
 #include "vkkiller_server.h"
@@ -37,8 +38,16 @@ void VkKillerServer::stop() noexcept {
         client->setSocketDescriptor(-1);
         emit clientDisconnected(client);
     }
+
+    /*
+    for (auto& thr: m_clientsThreads) {
+        thr->quit();
+        thr = nullptr;
+    }
+    */
     
     m_clients.clear();
+    //m_clientsThreads.clear();
     close();
 }
 
@@ -70,15 +79,21 @@ void VkKillerServer::incomingConnection(qintptr socketDescriptor) {
     m_clients[socketDescriptor] = new VkKillerClient(socketDescriptor, this);
     VkKillerClient* client = m_clients[socketDescriptor];
 
-    connect(client, SIGNAL(disconnected()), this, SLOT(disconnectClient    ()));
-    connect(client, SIGNAL(readyRead   ()), this, SLOT(processClientRequest()));
-
-    emit clientConnected(client);
-
     if (m_loggingEnabled)
         client->addEntryToLogs("Client has connected");
 
-    replyToClient(client, Reply_type::CONNECTED);
+    emit clientConnected(client);
+
+    QThread* thr = new QThread(this);
+    connect(thr, &QThread::started, this, [this, client, thr]() {
+        connect(client, SIGNAL(disconnected()), this, SLOT(disconnectClient    ()));
+        connect(client, SIGNAL(disconnected()), thr,  SLOT(quit                ()));
+        connect(client, SIGNAL(readyRead   ()), this, SLOT(processClientRequest()));
+
+        replyToClient(client, Reply_type::CONNECTED);
+    });
+
+    thr->start();
 }
 
 
@@ -355,5 +370,7 @@ void VkKillerServer::disconnectClient() {
 
     m_topics[client->m_selectedTopicNum].delReader(client);
     client->close();
+
+    QMutexLocker locker(&m_deleteClientMutex);
     m_clients.remove(client->id());
 }

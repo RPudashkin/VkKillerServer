@@ -46,6 +46,7 @@ private:
     QMap<quintptr, VkKillerClient*>                 m_clients;
     std::array<VkKillerTopic, MAX_TOPICS_AMOUNT>    m_topics;
     QMutex                                          m_openTopicMutex;
+    QMutex                                          m_deleteClientMutex;
     quint16                                         m_openTopicsAmount;
     bool                                            m_loggingEnabled;
 
