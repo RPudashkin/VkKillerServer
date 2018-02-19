@@ -35,7 +35,7 @@ public:
     static bool isValidMessage  (const QString& message)   noexcept;
 
     // Thread-safe operations
-    void addReader(VkKillerClient* client) noexcept;
+    bool addReader(VkKillerClient* client) noexcept;
     void delReader(VkKillerClient* client) noexcept;
 
     QMap<size_t, VkKillerClient*> getReaders() const noexcept;
@@ -87,6 +87,7 @@ private slots:
 private:
     static constexpr int UPDATE_RATING_FREQUENCY = 180000; // every 3 minutes
     static constexpr int MESSAGES_RESERVED       = 300;
+    static           int m_openTopicsAmount;
 
     QString                         m_name;
     QTime                           m_openTime;

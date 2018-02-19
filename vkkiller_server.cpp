@@ -39,15 +39,7 @@ void VkKillerServer::stop() noexcept {
         emit clientDisconnected(client);
     }
 
-    /*
-    for (auto& thr: m_clientsThreads) {
-        thr->quit();
-        thr = nullptr;
-    }
-    */
-    
     m_clients.clear();
-    //m_clientsThreads.clear();
     close();
 }
 
@@ -130,13 +122,13 @@ void VkKillerServer::processClientRequest() {
                 client->addEntryToLogs(entry);
             }
 
-            if (topicNum >= m_topics.size() || m_topics[topicNum].closed()) {
+            m_topics[client->m_selectedTopicNum].delReader(client);
+            bool clientHasAdded = m_topics[topicNum].addReader(client);
+
+            if (topicNum >= m_topics.size() || !clientHasAdded) {
                 replyToClient(client, Reply_type::UNKNOWN_TOPIC);
                 break;
             }
-
-            m_topics[client->m_selectedTopicNum].delReader(client);
-            m_topics[topicNum].addReader(client);
 
             client->m_selectedTopicNum  = topicNum;
             client->m_lastReadMsgNum    = m_topics[topicNum].size() - 1;

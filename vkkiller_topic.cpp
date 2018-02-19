@@ -6,7 +6,8 @@
 #include "vkkiller_server_constants.h"
 #include "vkkiller_client.h"
 
-#include <iostream>
+
+int VkKillerTopic::m_openTopicsAmount = 0;
 
 
 VkKillerTopic::VkKillerTopic(QObject* parent):
@@ -99,6 +100,7 @@ bool VkKillerTopic::open(const QString& topicName) noexcept {
     m_rating    = 1;
     m_closed    = false;
 
+    m_openTopicsAmount++;
     m_updateRatingTimer.start(UPDATE_RATING_FREQUENCY);
     return true;
 }
@@ -117,6 +119,8 @@ void VkKillerTopic::close() noexcept {
     for (auto& reader: m_readers)
         reader = nullptr;
     m_readers.clear();
+
+    m_openTopicsAmount--;
 }
 
 
@@ -166,13 +170,16 @@ bool VkKillerTopic::isValidMessage(const QString& message) noexcept {
 }
 
 
-void VkKillerTopic::addReader(VkKillerClient* client) noexcept {
+bool VkKillerTopic::addReader(VkKillerClient* client) noexcept {
+    if (m_closed) return false;
     QMutexLocker locker(&m_synchReadersMutex);
     m_readers[client->id()] = client;
+    return true;
 }
 
 
 void VkKillerTopic::delReader(VkKillerClient* client) noexcept {
+    if (m_closed) return;
     QMutexLocker locker(&m_synchReadersMutex);
     m_readers.remove(client->id());
 }
@@ -234,17 +241,14 @@ void VkKillerTopic::updateRating() noexcept {
     int   lastMsg        = msgAmount - 1;
     QTime lastMsgTime    = m_history[lastMsg].time;
     QDate lastMsgDate    = m_history[lastMsg].date;
-
-    float secsLastMsg    = m_openTime.secsTo(lastMsgTime);
-    float daysLastMsg    = m_openDate.daysTo(lastMsgDate);
+    float secsLastMsg    = lastMsgTime.secsTo(currTime);
+    float daysLastMsg    = lastMsgDate.daysTo(currDate);
     float minutesLastMsg = secsLastMsg / 60.0f + daysLastMsg * 1440.0f;
 
-    float alpha          = std::fabs(MESSAGES_RESERVED / 2 - msgAmount);
-    float beta           = minutesLife * minutesLife + minutesLastMsg * minutesLastMsg;
-    m_rating             = 60000.0 / (alpha + beta);
-
-    std::cout << "Name: "   << m_name.toStdString() << std::endl;
-    std::cout << "Rating: " << m_rating << std::endl;
+    float alpha          = std::abs(MESSAGES_RESERVED / 2 - msgAmount);
+    float beta           = std::abs((int)Server_constant::MAX_TOPICS_AMOUNT / 2 - m_openTopicsAmount);
+    float lambda         = 1.0f / 12.0f;
+    m_rating             = 10000.0f / std::exp(std::pow(minutesLife * minutesLastMsg, lambda)) - alpha - beta;
 
     if (m_rating <= 0)
         close();
