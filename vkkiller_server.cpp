@@ -209,7 +209,7 @@ void VkKillerServer::processClientRequest() {
                     break;
                 }
 
-            m_topics[topicNum].addMessage(client->name(), client->id(), time, date, message);
+            m_topics[topicNum].addMessage(client->name(), client->id(), time, date, std::move(message));
             client->m_lastMessageTime = time;
             client->m_lastReadMsgNum  = m_topics[topicNum].size() - 1;
 
@@ -264,7 +264,7 @@ void VkKillerServer::processClientRequest() {
                     if (!m_topics[i].open(topicName))
                         continue;
 
-                    m_topics[i].addMessage(client->name(), client->id(), time, date, message);
+                    m_topics[i].addMessage(client->name(), client->id(), time, date, std::move(message));
                     m_openTopicsAmount++;
                     break;
                 }

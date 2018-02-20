@@ -14,12 +14,13 @@ class VkKillerTopic: private QObject {
 
 public:
     explicit VkKillerTopic(QObject* parent = nullptr);
-    VkKillerTopic(VkKillerTopic&&);
-    VkKillerTopic& operator=(VkKillerTopic&&);
-   ~VkKillerTopic();
+    ~VkKillerTopic();
 
     VkKillerTopic(const VkKillerTopic&)             = delete;
     VkKillerTopic& operator=(const VkKillerTopic&)  = delete;
+    VkKillerTopic(VkKillerTopic&&)                  = delete;
+    VkKillerTopic& operator=(VkKillerTopic&&)       = delete;
+
 
     // Open a topic for discussion
     // By default all topics are closed
@@ -47,20 +48,30 @@ public:
                     const QDate&   date,
                     const QString& message) noexcept;
 
+    void addMessage(QString&&      authorName,
+                    const size_t   authorId,
+                    const QTime&   time,
+                    const QDate&   date,
+                    QString&&      message) noexcept;
+
+
     // Get a packed in QString topic history
     // beginning with selected message number
     QString getPackedHistory(size_t msgNum = 0) const noexcept;
 
 private:
-    // Move topic to *this
-    void move(VkKillerTopic&& topic) noexcept;
-
     struct Entry {
         Entry(const QString& authorName,
               const size_t   authorId,
               const QTime&   time,
               const QDate&   date,
               const QString& message);
+
+        Entry(QString&&      authorName,
+              const size_t   authorId,
+              const QTime&   time,
+              const QDate&   date,
+              QString&&      message);
 
         Entry(Entry&&);
         Entry& operator=(Entry&&);

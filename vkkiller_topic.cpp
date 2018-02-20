@@ -21,37 +21,7 @@ VkKillerTopic::VkKillerTopic(QObject* parent):
 }
 
 
-void VkKillerTopic::move(VkKillerTopic&& topic) noexcept {
-    m_name          = std::move(topic.m_name);
-    m_readers       = std::move(topic.m_readers);
-    m_history       = std::move(topic.m_history);
-    m_openTime      = std::move(topic.m_openTime);
-    m_openDate      = std::move(topic.m_openDate);
-    m_rating        = topic.m_rating;
-    m_closed        = topic.m_closed;
-    topic.m_rating  = 0;
-    topic.m_closed  = true;
-}
-
-
-VkKillerTopic::VkKillerTopic(VkKillerTopic&& topic) {
-    if (this != &topic)
-        move(std::move(topic));
-}
-
-
-VkKillerTopic& VkKillerTopic::operator=(VkKillerTopic&& topic) {
-    if (this != &topic)
-        move(std::move(topic));
-    return *this;
-}
-
-
-VkKillerTopic::~VkKillerTopic() {
-    for (auto& reader: m_readers)
-        reader = nullptr;
-    m_readers.clear();
-}
+VkKillerTopic::~VkKillerTopic() { close(); }
 
 
 VkKillerTopic::Entry::Entry(
@@ -68,11 +38,25 @@ VkKillerTopic::Entry::Entry(
 {}
 
 
+VkKillerTopic::Entry::Entry(
+        QString&&      authorName,
+        const size_t   authorId,
+        const QTime&   time,
+        const QDate&   date,
+        QString&&      message):
+    authorName      (std::move(authorName)),
+    authorId        (authorId),
+    time            (time),
+    date            (date),
+    message         (std::move(message))
+{}
+
+
 void VkKillerTopic::Entry::move(Entry&& entry) noexcept {
     authorName      = std::move(entry.authorName);
-    time            = std::move(entry.time);
-    date            = std::move(entry.date);
     message         = std::move(entry.message);
+    time            = entry.time;
+    date            = entry.date;
     authorId        = entry.authorId;
 }
 
@@ -199,6 +183,18 @@ void VkKillerTopic::addMessage(
 {
     QMutexLocker locker(&m_synchWritersMutex);
     m_history.emplace_back(authorName, authorId, time, date, message);
+}
+
+
+void VkKillerTopic::addMessage(
+    QString&&      authorName,
+    const size_t   authorId,
+    const QTime&   time,
+    const QDate&   date,
+    QString&&      message) noexcept
+{
+    QMutexLocker locker(&m_synchWritersMutex);
+    m_history.emplace_back(std::move(authorName), authorId, time, date, std::move(message));
 }
 
 
